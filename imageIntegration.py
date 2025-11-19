@@ -43,20 +43,20 @@ rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
 rcParams['font.size'] = fontsz
 rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
-focus_distance = None # Only show a certain distance
-plot_main = False
-save_all_plots = True
+focus_distance = 25 # Only show a certain distance
+plot_main = True
+save_all_plots = False
 #save_all_plots = False
 
 pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
 photon_energy = h * c / wavelength
 
-p_total = 1.21e-6
-p_total_error = 0.04e-6
+p_total = 1.02e-6#1.21e-6
+p_total_error = 0.05e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
 
-beam_images = {
+beam_images_old = {
 	0:   {"centre": (748, 532), "exposure": None},
 	25:   {"centre": (747, 523), "exposure": None},
 	50:  {"centre": (751, 588), "exposure": None},
@@ -79,10 +79,37 @@ beam_images = {
 	475: {"centre": (805, 525), "exposure": None},
 }
 
+beam_images = {
+	0:   {"centre": (725, 570), "exposure": 8.488e-3},
+	25:   {"centre": (747, 523), "exposure": 8.488e-3},
+	50:  {"centre": (751, 588), "exposure": 8.488e-3},
+	75:  {"centre": (751, 549), "exposure": 8.488e-3},    
+	100: {"centre": (751, 541), "exposure": 8.488e-3},
+	125:   {"centre": (750, 556), "exposure": 8.488e-3},
+	150:  {"centre": (750, 522), "exposure": 8.488e-3},
+	175:  {"centre": (748, 534), "exposure": 8.488e-3}, 
+	200: {"centre": (748, 493), "exposure": 8.488e-3},
+	225:   {"centre": (748, 459), "exposure": 8.488e-3},
+	250:  {"centre": (748, 517), "exposure": 8.488e-3},
+	275:  {"centre": (749, 546), "exposure": 8.488e-3}, 
+	300: {"centre": (751, 534), "exposure": 8.488e-3},
+	325:   {"centre": (753, 521), "exposure": 8.488e-3},
+	350:  {"centre": (756, 465), "exposure": 8.488e-3},
+	375:  {"centre": (761, 501), "exposure": 8.488e-3}, 
+	400: {"centre": (768, 477), "exposure": 8.488e-3},
+	425: {"centre": (778, 519), "exposure": 8.488e-3},
+	450: {"centre": (790, 585), "exposure": 8.488e-3},
+	475: {"centre": (805, 525), "exposure": 8.488e-3},
+	500: {"centre": (805, 525), "exposure": 8.488e-3},
+	525: {"centre": (805, 525), "exposure": 8.488e-3},
+	550: {"centre": (805, 525), "exposure": 8.488e-3},
+}
+
 default_exposure = 12.097e-3  # s
 exposure_error = 0.001
 allNormal = False
-base_path = "Beam_Images_New/"
+base_path_old = "Beam_Images_Old/"
+base_path = "Camera_images_new/"
 
 def to3string(dist: int):
 	"""Converts integers to 3 digit strings, i.e. 25 -> 025"""
@@ -96,7 +123,8 @@ def round_sig(x, sig=3):
 
 def process_image(distance, centre=None, exposure=None, normalise=False):
 	"""Process a single beam image and return all derived quantities."""
-	path = f"{base_path}{to3string(distance)}_0_12_097ms.bmp"
+	#path = f"{base_path}{to3string(distance)}_0_12_097ms.bmp"
+	path = f"{base_path}{to3string(distance)}_1_8.488.bmp"
 	img = plt.imread(path)
 	if img.ndim == 3:
 		img = img.mean(axis=2)

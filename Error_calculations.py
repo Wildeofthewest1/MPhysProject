@@ -60,8 +60,12 @@ measurements = np.array([
     (0.222, 1.47)
 ])
 
+measurements = np.array([
+    (0.037, 1.05)
+])
+
 # Known reading uncertainty (±0.01 µW)
-u_read = 0.01
+u_read = 0.001
 
 # 1. Compute differences and their uncertainty
 diffs = measurements[:, 1] - measurements[:, 0]
