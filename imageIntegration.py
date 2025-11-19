@@ -43,7 +43,7 @@ rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
 rcParams['font.size'] = fontsz
 rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
-focus_distance = 25 # Only show a certain distance
+focus_distance = 75 # Only show a certain distance
 plot_main = True
 save_all_plots = False
 #save_all_plots = False
@@ -81,28 +81,28 @@ beam_images_old = {
 
 beam_images = {
 	0:   {"centre": (725, 570), "exposure": 8.488e-3},
-	25:   {"centre": (747, 523), "exposure": 8.488e-3},
-	50:  {"centre": (751, 588), "exposure": 8.488e-3},
-	75:  {"centre": (751, 549), "exposure": 8.488e-3},    
-	100: {"centre": (751, 541), "exposure": 8.488e-3},
-	125:   {"centre": (750, 556), "exposure": 8.488e-3},
-	150:  {"centre": (750, 522), "exposure": 8.488e-3},
-	175:  {"centre": (748, 534), "exposure": 8.488e-3}, 
-	200: {"centre": (748, 493), "exposure": 8.488e-3},
-	225:   {"centre": (748, 459), "exposure": 8.488e-3},
-	250:  {"centre": (748, 517), "exposure": 8.488e-3},
-	275:  {"centre": (749, 546), "exposure": 8.488e-3}, 
-	300: {"centre": (751, 534), "exposure": 8.488e-3},
-	325:   {"centre": (753, 521), "exposure": 8.488e-3},
-	350:  {"centre": (756, 465), "exposure": 8.488e-3},
-	375:  {"centre": (761, 501), "exposure": 8.488e-3}, 
-	400: {"centre": (768, 477), "exposure": 8.488e-3},
-	425: {"centre": (778, 519), "exposure": 8.488e-3},
-	450: {"centre": (790, 585), "exposure": 8.488e-3},
-	475: {"centre": (805, 525), "exposure": 8.488e-3},
-	500: {"centre": (805, 525), "exposure": 8.488e-3},
-	525: {"centre": (805, 525), "exposure": 8.488e-3},
-	550: {"centre": (805, 525), "exposure": 8.488e-3},
+	25:   {"centre": (726, 569), "exposure": 8.488e-3},
+	50:  {"centre": (732, 568), "exposure": 8.488e-3},
+	75:  {"centre": (726, 569), "exposure": 8.488e-3},    
+	100: {"centre": (726, 569), "exposure": 8.488e-3},
+	125:   {"centre": (726, 569), "exposure": 8.488e-3},
+	150:  {"centre": (726, 569), "exposure": 8.488e-3},
+	175:  {"centre": (726, 569), "exposure": 8.488e-3}, 
+	200: {"centre": (726, 569), "exposure": 8.488e-3},
+	225:   {"centre": (726, 569), "exposure": 8.488e-3},
+	250:  {"centre": (726, 569), "exposure": 8.488e-3},
+	275:  {"centre": (726, 569), "exposure": 8.488e-3}, 
+	300: {"centre": (726, 569), "exposure": 8.488e-3},
+	325:   {"centre": (726, 569), "exposure": 8.488e-3},
+	350:  {"centre": (726, 569), "exposure": 8.488e-3},
+	375:  {"centre": (726, 569), "exposure": 8.488e-3}, 
+	400: {"centre": (726, 569), "exposure": 8.488e-3},
+	425: {"centre": (726, 569), "exposure": 8.488e-3},
+	450: {"centre": (726, 569), "exposure": 8.488e-3},
+	475: {"centre": (726, 569), "exposure": 8.488e-3},
+	500: {"centre": (726, 569), "exposure": 8.488e-3},
+	525: {"centre": (726, 569), "exposure": 8.488e-3},
+	550: {"centre": (726, 569), "exposure": 8.488e-3},
 }
 
 default_exposure = 12.097e-3  # s
