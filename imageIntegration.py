@@ -18,8 +18,6 @@ rcParams['ytick.major.size'] = 4
 rcParams['xtick.minor.size'] = 2
 rcParams['ytick.minor.size'] = 2
 
-
-
 h = 6.62607015e-34  # Planck's constant (J·s)
 c = 2.99792458e8    # speed of light (m/s)
 wavelength = 328.1629601e-9 #wavelength of light
@@ -46,8 +44,8 @@ rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
 focus_distance = None # Only show a certain distance
 plot_main = False
-save_all_plots = True
-#save_all_plots = False
+#save_all_plots = True
+save_all_plots = False
 
 pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
@@ -251,7 +249,7 @@ if plot_main:
 		I_ave_peak = data["I_Ave_max"]
 
 		# --- Column 1: Original image ---
-		axs[i, 0].imshow(img, cmap="inferno", origin="lower")
+		axs[i, 0].imshow(img, cmap="CMRmap", origin="lower")
 		axs[i, 0].plot(cx, cy, "bo", markersize=3, alpha=0.6)
 		axs[i, 0].set_ylabel("y (pixels)")
 		if i == 0:
@@ -263,7 +261,7 @@ if plot_main:
 			axs[i, 0].set_xlabel("x (pixels)")
 
 		# --- Column 2: Polar-transformed image ---
-		axs[i, 1].imshow(polar_img, extent=polar_extent, aspect="auto", cmap="inferno", origin="lower")
+		axs[i, 1].imshow(polar_img, extent=polar_extent, aspect="auto", cmap="CMRmap", origin="lower")
 		axs[i, 1].set_ylabel(polar_ylabel)
 		if i == 0:
 			axs[i, 1].set_title("Polar coordinates")
@@ -350,7 +348,7 @@ if focus_distance is None:
 		extent=extent,
 		aspect='auto',
 		origin='lower',
-		cmap='inferno',
+		cmap='CMRmap',
 		interpolation='bilinear'
 	)
 	cbar = plt.colorbar(label=r"$I(r)$ / $I_{sat}$")
@@ -397,7 +395,7 @@ if focus_distance is None:
 		extent=extent,
 		aspect='auto',
 		origin='lower',
-		cmap='inferno',
+		cmap='CMRmap',
 		interpolation='bilinear'
 	)
 	cbar = plt.colorbar(label=r"$I_{avg}(r)$ / $I_{sat}$")
