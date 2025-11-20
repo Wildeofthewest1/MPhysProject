@@ -19,6 +19,7 @@ rcParams['xtick.minor.size'] = 2
 rcParams['ytick.minor.size'] = 2
 
 
+
 h = 6.62607015e-34  # Planck's constant (J·s)
 c = 2.99792458e8    # speed of light (m/s)
 wavelength = 328.1629601e-9 #wavelength of light
@@ -43,9 +44,9 @@ rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
 rcParams['font.size'] = fontsz
 rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
-focus_distance = 75 # Only show a certain distance
-plot_main = True
-save_all_plots = False
+focus_distance = None # Only show a certain distance
+plot_main = False
+save_all_plots = True
 #save_all_plots = False
 
 pixel_size = 3.45e-6 #m
@@ -82,27 +83,27 @@ beam_images_old = {
 beam_images = {
 	0:   {"centre": (725, 570), "exposure": 8.488e-3},
 	25:   {"centre": (726, 569), "exposure": 8.488e-3},
-	50:  {"centre": (732, 568), "exposure": 8.488e-3},
-	75:  {"centre": (726, 569), "exposure": 8.488e-3},    
-	100: {"centre": (726, 569), "exposure": 8.488e-3},
-	125:   {"centre": (726, 569), "exposure": 8.488e-3},
-	150:  {"centre": (726, 569), "exposure": 8.488e-3},
-	175:  {"centre": (726, 569), "exposure": 8.488e-3}, 
-	200: {"centre": (726, 569), "exposure": 8.488e-3},
-	225:   {"centre": (726, 569), "exposure": 8.488e-3},
-	250:  {"centre": (726, 569), "exposure": 8.488e-3},
-	275:  {"centre": (726, 569), "exposure": 8.488e-3}, 
-	300: {"centre": (726, 569), "exposure": 8.488e-3},
-	325:   {"centre": (726, 569), "exposure": 8.488e-3},
-	350:  {"centre": (726, 569), "exposure": 8.488e-3},
-	375:  {"centre": (726, 569), "exposure": 8.488e-3}, 
-	400: {"centre": (726, 569), "exposure": 8.488e-3},
-	425: {"centre": (726, 569), "exposure": 8.488e-3},
-	450: {"centre": (726, 569), "exposure": 8.488e-3},
-	475: {"centre": (726, 569), "exposure": 8.488e-3},
-	500: {"centre": (726, 569), "exposure": 8.488e-3},
-	525: {"centre": (726, 569), "exposure": 8.488e-3},
-	550: {"centre": (726, 569), "exposure": 8.488e-3},
+	50:  {"centre": (733, 568), "exposure": 8.488e-3},
+	75:  {"centre": (844, 566), "exposure": 8.488e-3},    
+	100: {"centre": (854, 561), "exposure": 8.488e-3},
+	125:   {"centre": (790, 557), "exposure": 8.488e-3},
+	150:  {"centre": (802, 555), "exposure": 8.488e-3},
+	175:  {"centre": (703, 550), "exposure": 8.488e-3}, 
+	200: {"centre": (772, 547), "exposure": 8.488e-3},
+	225:   {"centre": (789, 544), "exposure": 8.488e-3},
+	250:  {"centre": (768, 541), "exposure": 8.488e-3},
+	275:  {"centre": (782, 539), "exposure": 8.488e-3}, 
+	300: {"centre": (792, 532), "exposure": 8.488e-3},
+	325:   {"centre": (785, 533), "exposure": 8.488e-3},
+	350:  {"centre": (769, 533), "exposure": 8.488e-3},
+	375:  {"centre": (803, 534), "exposure": 8.488e-3}, 
+	400: {"centre": (799, 538), "exposure": 8.488e-3},
+	425: {"centre": (712, 544), "exposure": 8.488e-3},
+	450: {"centre": (720, 552), "exposure": 8.488e-3},
+	475: {"centre": (643, 563), "exposure": 8.488e-3},
+	500: {"centre": (799, 578), "exposure": 8.488e-3},
+	525: {"centre": (724, 594), "exposure": 8.488e-3},
+	550: {"centre": (709, 610), "exposure": 8.488e-3},
 }
 
 default_exposure = 12.097e-3  # s
@@ -311,7 +312,7 @@ if plot_main:
 	plt.subplots_adjust(hspace=0.1, wspace=0.25)
 
 	if focus_distance != None and save_all_plots:
-		plt.savefig(to3string(focus_distance)+"_Plots", dpi=300, bbox_inches='tight')
+		plt.savefig(to3string(focus_distance)+"_Plots_new", dpi=300, bbox_inches='tight')
 
 	plt.show()
 
@@ -359,12 +360,18 @@ if focus_distance is None:
 	plt.xlabel("Distance (mm)")
 	plt.ylabel("Radius (mm)")
 	plt.title("Radial Intensity Profiles Heatmap")
+
+	ax = plt.gca()
+	ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
+	ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+
 	plt.tight_layout()
 
 	plt.ticklabel_format(style='sci', axis='both', scilimits=(-3, 3))
 
+
 	if save_all_plots:
-		plt.savefig("I_r_heatmap.png", dpi=300, bbox_inches='tight')
+		plt.savefig("I_r_heatmap_new.png", dpi=300, bbox_inches='tight')
 
 	plt.show()
 
@@ -400,12 +407,17 @@ if focus_distance is None:
 	plt.xlabel("Distance (mm)")
 	plt.ylabel("Radius (mm)")
 	plt.title("Encircled-Average Intensity Profiles Heatmap")
+
+	ax = plt.gca()
+	ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
+	ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+
 	plt.tight_layout()
 
 	plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
 
 	if save_all_plots:
-		plt.savefig("I_Ave_r_heatmap.png", dpi=300, bbox_inches='tight')
+		plt.savefig("I_Ave_r_heatmap_new.png", dpi=300, bbox_inches='tight')
 
 	plt.show()
 
@@ -419,13 +431,18 @@ if focus_distance is None:
 	plt.xlabel("Distance from 0 point (mm)")
 	plt.ylabel(r"$I_{max}$ / $I_{sat}$")
 	plt.title("Peak intensity vs distance")
+
+	ax = plt.gca()
+	ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
+	ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+
 	plt.tight_layout()
 	plt.legend(loc="lower right")
 
 	plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
 
 	if save_all_plots:
-		plt.savefig("I_max_distance_graph", dpi=300, bbox_inches='tight')
+		plt.savefig("I_max_distance_graph_new", dpi=300, bbox_inches='tight')
 	plt.show()
 
 else:
@@ -499,7 +516,7 @@ for d in results:
 
 
 # --- Estimate uncertainty due to manual centre placement ---
-centre_error_px = 3.0  # estimated uncertainty in chosen beam centre [pixels]
+centre_error_px = 2  # estimated uncertainty in chosen beam centre [pixels]
 centre_error_m = centre_error_px * pixel_size
 
 print(f"\nEstimating per-image uncertainty from ±{centre_error_px:.0f} px centre placement...")
@@ -568,12 +585,17 @@ plt.xlabel("Distance from 0 point (mm)")
 plt.ylabel(r"$I_{max}$ / $I_{sat}$")
 plt.title("Peak intensity vs distance")
 plt.legend(loc="lower right")
+
+ax = plt.gca()
+ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
+ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+
 plt.tight_layout()
 
 plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
 
 if save_all_plots:
-	plt.savefig("I_max_distance_graph_errors", dpi=300, bbox_inches='tight')
+	plt.savefig("I_max_distance_graph_errors_new", dpi=300, bbox_inches='tight')
 
 plt.show()
 
