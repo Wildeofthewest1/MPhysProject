@@ -55,7 +55,7 @@ p_total = 1.02e-6#1.21e-6
 p_total_error = 0.05e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
 
-beam_images_old = {
+beam_images = {
 	0:   {"centre": (748, 532), "exposure": None},
 	25:   {"centre": (747, 523), "exposure": None},
 	50:  {"centre": (751, 588), "exposure": None},
@@ -104,15 +104,111 @@ beam_images = {
 	550: {"centre": (709, 610), "exposure": 8.488e-3},
 }
 
+beam_images = {
+	0:   {"centre": (725, 570), "exposure": 8.488e-3},
+	50:   {"centre": (726, 569), "exposure": 8.488e-3},
+	100:  {"centre": (733, 568), "exposure": 8.488e-3},
+	150:  {"centre": (844, 566), "exposure": 8.488e-3},    
+	200: {"centre": (854, 561), "exposure": 8.488e-3},
+	250:   {"centre": (790, 557), "exposure": 8.488e-3},
+	300:  {"centre": (802, 555), "exposure": 8.488e-3},
+	350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
+	400: {"centre": (772, 547), "exposure": 8.488e-3},
+	450:   {"centre": (789, 544), "exposure": 8.488e-3},
+	500:  {"centre": (768, 541), "exposure": 8.488e-3},
+	550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
+	600: {"centre": (792, 532), "exposure": 8.488e-3},
+	650:   {"centre": (785, 533), "exposure": 8.488e-3},
+	700:  {"centre": (769, 533), "exposure": 8.488e-3},
+	750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
+	800: {"centre": (799, 538), "exposure": 8.488e-3},
+	850: {"centre": (712, 544), "exposure": 8.488e-3},
+	900: {"centre": (720, 552), "exposure": 8.488e-3},
+	950: {"centre": (643, 563), "exposure": 8.488e-3},
+	1000: {"centre": (799, 578), "exposure": 8.488e-3},
+	1050:   {"centre": (726, 569), "exposure": 8.488e-3},
+	1100:  {"centre": (733, 568), "exposure": 8.488e-3},
+	1150:  {"centre": (844, 566), "exposure": 8.488e-3},    
+	1200: {"centre": (854, 561), "exposure": 8.488e-3},
+	1250:   {"centre": (790, 557), "exposure": 8.488e-3},
+	1300:  {"centre": (802, 555), "exposure": 8.488e-3},
+	1350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
+	1400: {"centre": (772, 547), "exposure": 8.488e-3},
+	1450:   {"centre": (789, 544), "exposure": 8.488e-3},
+	1500:  {"centre": (768, 541), "exposure": 8.488e-3},
+	1550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
+	1600: {"centre": (792, 532), "exposure": 8.488e-3},
+	1650:   {"centre": (785, 533), "exposure": 8.488e-3},
+	1700:  {"centre": (769, 533), "exposure": 8.488e-3},
+	1750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
+	1800: {"centre": (799, 538), "exposure": 8.488e-3},
+	1850: {"centre": (712, 544), "exposure": 8.488e-3},
+	1900: {"centre": (720, 552), "exposure": 8.488e-3},
+	1950: {"centre": (643, 563), "exposure": 8.488e-3},
+	2000: {"centre": (799, 578), "exposure": 8.488e-3},
+	2050:   {"centre": (726, 569), "exposure": 8.488e-3},
+	2100:  {"centre": (733, 568), "exposure": 8.488e-3},
+	2150:  {"centre": (844, 566), "exposure": 8.488e-3},    
+	2200: {"centre": (854, 561), "exposure": 8.488e-3},
+	2250:   {"centre": (790, 557), "exposure": 8.488e-3},
+	2300:  {"centre": (802, 555), "exposure": 8.488e-3},
+	2350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
+	2400: {"centre": (772, 547), "exposure": 8.488e-3},
+	2450:   {"centre": (789, 544), "exposure": 8.488e-3},
+	2500:  {"centre": (768, 541), "exposure": 8.488e-3},
+	2550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
+	2600: {"centre": (792, 532), "exposure": 8.488e-3},
+	2650:   {"centre": (785, 533), "exposure": 8.488e-3},
+	2700:  {"centre": (769, 533), "exposure": 8.488e-3},
+	2750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
+	2800: {"centre": (799, 538), "exposure": 8.488e-3},
+	2850: {"centre": (712, 544), "exposure": 8.488e-3},
+	2900: {"centre": (720, 552), "exposure": 8.488e-3},
+	2950: {"centre": (643, 563), "exposure": 8.488e-3},
+	3000: {"centre": (799, 578), "exposure": 8.488e-3},
+	3050:   {"centre": (726, 569), "exposure": 8.488e-3},
+	3100:  {"centre": (733, 568), "exposure": 8.488e-3},
+	3150:  {"centre": (844, 566), "exposure": 8.488e-3},    
+	3200: {"centre": (854, 561), "exposure": 8.488e-3},
+	3250:   {"centre": (790, 557), "exposure": 8.488e-3},
+	3300:  {"centre": (802, 555), "exposure": 8.488e-3},
+	3350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
+	3400: {"centre": (772, 547), "exposure": 8.488e-3},
+	3450:   {"centre": (789, 544), "exposure": 8.488e-3},
+	3500:  {"centre": (768, 541), "exposure": 8.488e-3},
+	3550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
+	3600: {"centre": (792, 532), "exposure": 8.488e-3},
+	3650:   {"centre": (785, 533), "exposure": 8.488e-3},
+	3700:  {"centre": (769, 533), "exposure": 8.488e-3},
+	3750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
+	3800: {"centre": (799, 538), "exposure": 8.488e-3},
+	3850: {"centre": (712, 544), "exposure": 8.488e-3},
+	3900: {"centre": (720, 552), "exposure": 8.488e-3},
+	3950: {"centre": (643, 563), "exposure": 8.488e-3},
+	4000: {"centre": (799, 578), "exposure": 8.488e-3},
+	4050: {"centre": (799, 578), "exposure": 8.488e-3},
+}
+
 default_exposure = 12.097e-3  # s
 exposure_error = 0.001
 allNormal = False
-base_path_old = "Beam_Images_Old/"
+
+base_path = "Beam_Images_Old/"
+end_path = "_0_12_097ms.bmp"
+
 base_path = "Camera_images_new/"
+end_path = "_1_8.488.bmp"
+
+base_path = "Camera_Spec_Voltage/"
+end_path = "mV_8.488_450.bmp"
 
 def to3string(dist: int):
 	"""Converts integers to 3 digit strings, i.e. 25 -> 025"""
 	return str(dist).zfill(3)
+
+def to4string(dist: int):
+	"""Converts integers to 3 digit strings, i.e. 25 -> 025"""
+	return str(dist).zfill(4)
 
 def round_sig(x, sig=3):
 	"""Round a number to a given number of significant figures."""
@@ -123,7 +219,7 @@ def round_sig(x, sig=3):
 def process_image(distance, centre=None, exposure=None, normalise=False):
 	"""Process a single beam image and return all derived quantities."""
 	#path = f"{base_path}{to3string(distance)}_0_12_097ms.bmp"
-	path = f"{base_path}{to3string(distance)}_1_8.488.bmp"
+	path = f"{base_path}{to4string(distance)}" + end_path
 	img = plt.imread(path)
 	if img.ndim == 3:
 		img = img.mean(axis=2)
@@ -637,3 +733,42 @@ for d in sorted(results.keys()):
 print("\\hline")
 print("\\end{tabular}")
 print("\\end{table}")
+
+
+def compute_and_plot_pixel_sums(results):
+    """
+    Computes the total (unscaled) pixel sum of each raw image
+    and plots pixel-sum vs. distance.
+
+    Parameters
+    ----------
+    results : dict
+        The results dictionary populated after process_image().
+
+    Returns
+    -------
+    distances : np.ndarray
+        Sorted array of distances.
+    pixel_sums : np.ndarray
+        Total pixel value for each distance.
+    """
+    distances = np.array(sorted(results.keys()))
+    pixel_sums = np.array([np.sum(results[d]["img"]) for d in distances])
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(distances, pixel_sums, "o-", zorder=1)
+    plt.xlabel("Voltage (mV)")
+    plt.ylabel("Total pixel sum (arb.)")
+    plt.title("Sum of all pixel values vs. distance")
+
+    ax = plt.gca()
+    ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+
+    plt.tight_layout()
+    plt.show()
+
+    return distances, pixel_sums
+
+
+distances, pixel_sums = compute_and_plot_pixel_sums(results)
