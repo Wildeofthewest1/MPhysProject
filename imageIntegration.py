@@ -18,6 +18,48 @@ rcParams['ytick.major.size'] = 4
 rcParams['xtick.minor.size'] = 2
 rcParams['ytick.minor.size'] = 2
 
+# --- Configuration ---
+os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+print("Now running in:", os.getcwd())
+
+mode = 2
+
+if mode >= 2:
+
+	import json
+
+	# Toggle this to control calibration behaviour
+	saveNewScaleFactorMean = False     # True  → recompute and save new k_mean
+							# False → load existing k_mean from file
+
+	kmean_file = "k_mean_calibration.json"
+
+	def save_kmean(k_mean):
+		with open(kmean_file, "w") as f:
+			json.dump({"k_mean": k_mean}, f)
+
+	def load_kmean():
+		if not os.path.exists(kmean_file):
+			return None
+		with open(kmean_file, "r") as f:
+			return json.load(f)["k_mean"]
+
+	# Determine starting k_mean based on saveNewMean flag
+	if saveNewScaleFactorMean:
+		# We want to generate a new calibration
+		k_mean_global = None
+	else:
+        # Use existing calibration
+		k_mean_global = load_kmean()
+		if k_mean_global is None:
+			raise RuntimeError(
+                "saveNewScaleFactorMean=False but no k_mean_calibration.json exists."
+            )
+
+else:
+    # In mode 0/1 always do calibration
+    k_mean_global = None
+
 h = 6.62607015e-34  # Planck's constant (J·s)
 c = 2.99792458e8    # speed of light (m/s)
 wavelength = 328.1629601e-9 #wavelength of light
@@ -31,10 +73,6 @@ I_sat = 867 #(np.pi * h * c)/(3 * tau * wavelength**3) #867(4)
 I_sat_error = 4
 
 print(I_sat)
-
-# --- Configuration ---
-os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
-print("Now running in:", os.getcwd())
 
 fontsz = 16
 rcParams['font.family'] = 'serif' # e.g. 'sans-serif', 'monospace', etc.
@@ -55,152 +93,150 @@ p_total = 1.02e-6#1.21e-6
 p_total_error = 0.05e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
 
-beam_images = {
-	0:   {"centre": (748, 532), "exposure": None},
-	25:   {"centre": (747, 523), "exposure": None},
-	50:  {"centre": (751, 588), "exposure": None},
-	75:  {"centre": (751, 549), "exposure": None},    
-	100: {"centre": (751, 541), "exposure": None},
-	125:   {"centre": (750, 556), "exposure": None},
-	150:  {"centre": (750, 522), "exposure": None},
-	175:  {"centre": (748, 534), "exposure": None}, 
-	200: {"centre": (748, 493), "exposure": None},
-	225:   {"centre": (748, 459), "exposure": None},
-	250:  {"centre": (748, 517), "exposure": None},
-	275:  {"centre": (749, 546), "exposure": None}, 
-	300: {"centre": (751, 534), "exposure": None},
-	325:   {"centre": (753, 521), "exposure": None},
-	350:  {"centre": (756, 465), "exposure": None},
-	375:  {"centre": (761, 501), "exposure": None}, 
-	400: {"centre": (768, 477), "exposure": None},
-	425: {"centre": (778, 519), "exposure": None},
-	450: {"centre": (790, 585), "exposure": None},
-	475: {"centre": (805, 525), "exposure": None},
-}
-
-beam_images = {
-	0:   {"centre": (725, 570), "exposure": 8.488e-3},
-	25:   {"centre": (726, 569), "exposure": 8.488e-3},
-	50:  {"centre": (733, 568), "exposure": 8.488e-3},
-	75:  {"centre": (844, 566), "exposure": 8.488e-3},    
-	100: {"centre": (854, 561), "exposure": 8.488e-3},
-	125:   {"centre": (790, 557), "exposure": 8.488e-3},
-	150:  {"centre": (802, 555), "exposure": 8.488e-3},
-	175:  {"centre": (703, 550), "exposure": 8.488e-3}, 
-	200: {"centre": (772, 547), "exposure": 8.488e-3},
-	225:   {"centre": (789, 544), "exposure": 8.488e-3},
-	250:  {"centre": (768, 541), "exposure": 8.488e-3},
-	275:  {"centre": (782, 539), "exposure": 8.488e-3}, 
-	300: {"centre": (792, 532), "exposure": 8.488e-3},
-	325:   {"centre": (785, 533), "exposure": 8.488e-3},
-	350:  {"centre": (769, 533), "exposure": 8.488e-3},
-	375:  {"centre": (803, 534), "exposure": 8.488e-3}, 
-	400: {"centre": (799, 538), "exposure": 8.488e-3},
-	425: {"centre": (712, 544), "exposure": 8.488e-3},
-	450: {"centre": (720, 552), "exposure": 8.488e-3},
-	475: {"centre": (643, 563), "exposure": 8.488e-3},
-	500: {"centre": (799, 578), "exposure": 8.488e-3},
-	525: {"centre": (724, 594), "exposure": 8.488e-3},
-	550: {"centre": (709, 610), "exposure": 8.488e-3},
-}
-
-beam_images = {
-	0:   {"centre": (725, 570), "exposure": 8.488e-3},
-	50:   {"centre": (726, 569), "exposure": 8.488e-3},
-	100:  {"centre": (733, 568), "exposure": 8.488e-3},
-	150:  {"centre": (844, 566), "exposure": 8.488e-3},    
-	200: {"centre": (854, 561), "exposure": 8.488e-3},
-	250:   {"centre": (790, 557), "exposure": 8.488e-3},
-	300:  {"centre": (802, 555), "exposure": 8.488e-3},
-	350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
-	400: {"centre": (772, 547), "exposure": 8.488e-3},
-	450:   {"centre": (789, 544), "exposure": 8.488e-3},
-	500:  {"centre": (768, 541), "exposure": 8.488e-3},
-	550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
-	600: {"centre": (792, 532), "exposure": 8.488e-3},
-	650:   {"centre": (785, 533), "exposure": 8.488e-3},
-	700:  {"centre": (769, 533), "exposure": 8.488e-3},
-	750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
-	800: {"centre": (799, 538), "exposure": 8.488e-3},
-	850: {"centre": (712, 544), "exposure": 8.488e-3},
-	900: {"centre": (720, 552), "exposure": 8.488e-3},
-	950: {"centre": (643, 563), "exposure": 8.488e-3},
-	1000: {"centre": (799, 578), "exposure": 8.488e-3},
-	1050:   {"centre": (726, 569), "exposure": 8.488e-3},
-	1100:  {"centre": (733, 568), "exposure": 8.488e-3},
-	1150:  {"centre": (844, 566), "exposure": 8.488e-3},    
-	1200: {"centre": (854, 561), "exposure": 8.488e-3},
-	1250:   {"centre": (790, 557), "exposure": 8.488e-3},
-	1300:  {"centre": (802, 555), "exposure": 8.488e-3},
-	1350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
-	1400: {"centre": (772, 547), "exposure": 8.488e-3},
-	1450:   {"centre": (789, 544), "exposure": 8.488e-3},
-	1500:  {"centre": (768, 541), "exposure": 8.488e-3},
-	1550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
-	1600: {"centre": (792, 532), "exposure": 8.488e-3},
-	1650:   {"centre": (785, 533), "exposure": 8.488e-3},
-	1700:  {"centre": (769, 533), "exposure": 8.488e-3},
-	1750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
-	1800: {"centre": (799, 538), "exposure": 8.488e-3},
-	1850: {"centre": (712, 544), "exposure": 8.488e-3},
-	1900: {"centre": (720, 552), "exposure": 8.488e-3},
-	1950: {"centre": (643, 563), "exposure": 8.488e-3},
-	2000: {"centre": (799, 578), "exposure": 8.488e-3},
-	2050:   {"centre": (726, 569), "exposure": 8.488e-3},
-	2100:  {"centre": (733, 568), "exposure": 8.488e-3},
-	2150:  {"centre": (844, 566), "exposure": 8.488e-3},    
-	2200: {"centre": (854, 561), "exposure": 8.488e-3},
-	2250:   {"centre": (790, 557), "exposure": 8.488e-3},
-	2300:  {"centre": (802, 555), "exposure": 8.488e-3},
-	2350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
-	2400: {"centre": (772, 547), "exposure": 8.488e-3},
-	2450:   {"centre": (789, 544), "exposure": 8.488e-3},
-	2500:  {"centre": (768, 541), "exposure": 8.488e-3},
-	2550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
-	2600: {"centre": (792, 532), "exposure": 8.488e-3},
-	2650:   {"centre": (785, 533), "exposure": 8.488e-3},
-	2700:  {"centre": (769, 533), "exposure": 8.488e-3},
-	2750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
-	2800: {"centre": (799, 538), "exposure": 8.488e-3},
-	2850: {"centre": (712, 544), "exposure": 8.488e-3},
-	2900: {"centre": (720, 552), "exposure": 8.488e-3},
-	2950: {"centre": (643, 563), "exposure": 8.488e-3},
-	3000: {"centre": (799, 578), "exposure": 8.488e-3},
-	3050:   {"centre": (726, 569), "exposure": 8.488e-3},
-	3100:  {"centre": (733, 568), "exposure": 8.488e-3},
-	3150:  {"centre": (844, 566), "exposure": 8.488e-3},    
-	3200: {"centre": (854, 561), "exposure": 8.488e-3},
-	3250:   {"centre": (790, 557), "exposure": 8.488e-3},
-	3300:  {"centre": (802, 555), "exposure": 8.488e-3},
-	3350:  {"centre": (703, 550), "exposure": 8.488e-3}, 
-	3400: {"centre": (772, 547), "exposure": 8.488e-3},
-	3450:   {"centre": (789, 544), "exposure": 8.488e-3},
-	3500:  {"centre": (768, 541), "exposure": 8.488e-3},
-	3550:  {"centre": (782, 539), "exposure": 8.488e-3}, 
-	3600: {"centre": (792, 532), "exposure": 8.488e-3},
-	3650:   {"centre": (785, 533), "exposure": 8.488e-3},
-	3700:  {"centre": (769, 533), "exposure": 8.488e-3},
-	3750:  {"centre": (803, 534), "exposure": 8.488e-3}, 
-	3800: {"centre": (799, 538), "exposure": 8.488e-3},
-	3850: {"centre": (712, 544), "exposure": 8.488e-3},
-	3900: {"centre": (720, 552), "exposure": 8.488e-3},
-	3950: {"centre": (643, 563), "exposure": 8.488e-3},
-	4000: {"centre": (799, 578), "exposure": 8.488e-3},
-	4050: {"centre": (799, 578), "exposure": 8.488e-3},
-}
+if mode == 0:
+	beam_images = {
+		0:   {"centre": (748, 532), "exposure": None},
+		25:   {"centre": (747, 523), "exposure": None},
+		50:  {"centre": (751, 588), "exposure": None},
+		75:  {"centre": (751, 549), "exposure": None},    
+		100: {"centre": (751, 541), "exposure": None},
+		125:   {"centre": (750, 556), "exposure": None},
+		150:  {"centre": (750, 522), "exposure": None},
+		175:  {"centre": (748, 534), "exposure": None}, 
+		200: {"centre": (748, 493), "exposure": None},
+		225:   {"centre": (748, 459), "exposure": None},
+		250:  {"centre": (748, 517), "exposure": None},
+		275:  {"centre": (749, 546), "exposure": None}, 
+		300: {"centre": (751, 534), "exposure": None},
+		325:   {"centre": (753, 521), "exposure": None},
+		350:  {"centre": (756, 465), "exposure": None},
+		375:  {"centre": (761, 501), "exposure": None}, 
+		400: {"centre": (768, 477), "exposure": None},
+		425: {"centre": (778, 519), "exposure": None},
+		450: {"centre": (790, 585), "exposure": None},
+		475: {"centre": (805, 525), "exposure": None},
+	}
+	base_path = "Beam_Images_Old/"
+	end_path = "_0_12_097ms.bmp"
+elif mode == 1:
+	beam_images = {
+		0:   {"centre": (725, 570), "exposure": 8.488e-3},
+		25:   {"centre": (726, 569), "exposure": 8.488e-3},
+		50:  {"centre": (733, 568), "exposure": 8.488e-3},
+		75:  {"centre": (844, 566), "exposure": 8.488e-3},    
+		100: {"centre": (854, 561), "exposure": 8.488e-3},
+		125:   {"centre": (790, 557), "exposure": 8.488e-3},
+		150:  {"centre": (802, 555), "exposure": 8.488e-3},
+		175:  {"centre": (703, 550), "exposure": 8.488e-3}, 
+		200: {"centre": (772, 547), "exposure": 8.488e-3},
+		225:   {"centre": (789, 544), "exposure": 8.488e-3},
+		250:  {"centre": (768, 541), "exposure": 8.488e-3},
+		275:  {"centre": (782, 539), "exposure": 8.488e-3}, 
+		300: {"centre": (792, 532), "exposure": 8.488e-3},
+		325:   {"centre": (785, 533), "exposure": 8.488e-3},
+		350:  {"centre": (769, 533), "exposure": 8.488e-3},
+		375:  {"centre": (803, 534), "exposure": 8.488e-3}, 
+		400: {"centre": (799, 538), "exposure": 8.488e-3},
+		425: {"centre": (712, 544), "exposure": 8.488e-3},
+		450: {"centre": (720, 552), "exposure": 8.488e-3},
+		475: {"centre": (643, 563), "exposure": 8.488e-3},
+		500: {"centre": (799, 578), "exposure": 8.488e-3},
+		525: {"centre": (724, 594), "exposure": 8.488e-3},
+		550: {"centre": (709, 610), "exposure": 8.488e-3},
+	}
+	base_path = "Camera_images_new/"
+	end_path = "_1_8.488.bmp"
+else:
+	beam_images = {
+		0:   {"centre": (740, 543), "exposure": 8.488e-3},
+		50:   {"centre": (740, 543), "exposure": 8.488e-3},
+		100:  {"centre": (740, 543), "exposure": 8.488e-3},
+		150:  {"centre": (740, 543), "exposure": 8.488e-3},    
+		200: {"centre": (740, 543), "exposure": 8.488e-3},
+		250:   {"centre": (740, 543), "exposure": 8.488e-3},
+		300:  {"centre": (740, 543), "exposure": 8.488e-3},
+		350:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		400: {"centre": (740, 543), "exposure": 8.488e-3},
+		450:   {"centre": (740, 543), "exposure": 8.488e-3},
+		500:  {"centre": (740, 543), "exposure": 8.488e-3},
+		550:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		600: {"centre": (740, 543), "exposure": 8.488e-3},
+		650:   {"centre": (740, 543), "exposure": 8.488e-3},
+		700:  {"centre": (740, 543), "exposure": 8.488e-3},
+		750:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		800: {"centre": (740, 543), "exposure": 8.488e-3},
+		850: {"centre": (740, 543), "exposure": 8.488e-3},
+		900: {"centre": (740, 543), "exposure": 8.488e-3},
+		950: {"centre": (740, 543), "exposure": 8.488e-3},
+		1000: {"centre": (740, 543), "exposure": 8.488e-3},
+		1050:   {"centre": (740, 543), "exposure": 8.488e-3},
+		1100:  {"centre": (740, 543), "exposure": 8.488e-3},
+		1150:  {"centre": (740, 543), "exposure": 8.488e-3},    
+		1200: {"centre": (740, 543), "exposure": 8.488e-3},
+		1250:   {"centre": (740, 543), "exposure": 8.488e-3},
+		1300:  {"centre": (740, 543), "exposure": 8.488e-3},
+		1350:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		1400: {"centre": (740, 543), "exposure": 8.488e-3},
+		1450:   {"centre": (740, 543), "exposure": 8.488e-3},
+		1500:  {"centre": (740, 543), "exposure": 8.488e-3},
+		1550:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		1600: {"centre": (740, 543), "exposure": 8.488e-3},
+		1650:   {"centre": (740, 543), "exposure": 8.488e-3},
+		1700:  {"centre": (740, 543), "exposure": 8.488e-3},
+		1750:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		1800: {"centre": (740, 543), "exposure": 8.488e-3},
+		1850: {"centre": (740, 543), "exposure": 8.488e-3},
+		1900: {"centre": (740, 543), "exposure": 8.488e-3},
+		1950: {"centre": (740, 543), "exposure": 8.488e-3},
+		2000: {"centre": (740, 543), "exposure": 8.488e-3},
+		2050:   {"centre": (740, 543), "exposure": 8.488e-3},
+		2100:  {"centre": (740, 543), "exposure": 8.488e-3},
+		2150:  {"centre": (740, 543), "exposure": 8.488e-3},    
+		2200: {"centre": (740, 543), "exposure": 8.488e-3},
+		2250:   {"centre": (740, 543), "exposure": 8.488e-3},
+		2300:  {"centre": (740, 543), "exposure": 8.488e-3},
+		2350:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		2400: {"centre": (740, 543), "exposure": 8.488e-3},
+		2450:   {"centre": (740, 543), "exposure": 8.488e-3},
+		2500:  {"centre": (740, 543), "exposure": 8.488e-3},
+		2550:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		2600: {"centre": (740, 543), "exposure": 8.488e-3},
+		2650:   {"centre": (740, 543), "exposure": 8.488e-3},
+		2700:  {"centre": (740, 543), "exposure": 8.488e-3},
+		2750:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		2800: {"centre": (740, 543), "exposure": 8.488e-3},
+		2850: {"centre": (740, 543), "exposure": 8.488e-3},
+		2900: {"centre": (740, 543), "exposure": 8.488e-3},
+		2950: {"centre": (740, 543), "exposure": 8.488e-3},
+		3000: {"centre": (740, 543), "exposure": 8.488e-3},
+		3050:   {"centre": (740, 543), "exposure": 8.488e-3},
+		3100:  {"centre": (740, 543), "exposure": 8.488e-3},
+		3150:  {"centre": (740, 543), "exposure": 8.488e-3},    
+		3200: {"centre": (740, 543), "exposure": 8.488e-3},
+		3250:   {"centre": (740, 543), "exposure": 8.488e-3},
+		3300:  {"centre": (740, 543), "exposure": 8.488e-3},
+		3350:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		3400: {"centre": (740, 543), "exposure": 8.488e-3},
+		3450:   {"centre": (740, 543), "exposure": 8.488e-3},
+		3500:  {"centre": (740, 543), "exposure": 8.488e-3},
+		3550:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		3600: {"centre": (740, 543), "exposure": 8.488e-3},
+		3650:   {"centre": (740, 543), "exposure": 8.488e-3},
+		3700:  {"centre": (740, 543), "exposure": 8.488e-3},
+		3750:  {"centre": (740, 543), "exposure": 8.488e-3}, 
+		3800: {"centre": (740, 543), "exposure": 8.488e-3},
+		3850: {"centre": (740, 543), "exposure": 8.488e-3},
+		3900: {"centre": (740, 543), "exposure": 8.488e-3},
+		3950: {"centre": (740, 543), "exposure": 8.488e-3},
+		4000: {"centre": (740, 543), "exposure": 8.488e-3},
+		4050: {"centre": (740, 543), "exposure": 8.488e-3},
+	}
+	base_path = "Camera_Spec_Voltage/"
+	end_path = "mV_8.488_450.bmp"
 
 default_exposure = 12.097e-3  # s
 exposure_error = 0.001
 allNormal = False
-
-base_path = "Beam_Images_Old/"
-end_path = "_0_12_097ms.bmp"
-
-base_path = "Camera_images_new/"
-end_path = "_1_8.488.bmp"
-
-base_path = "Camera_Spec_Voltage/"
-end_path = "mV_8.488_450.bmp"
 
 def to3string(dist: int):
 	"""Converts integers to 3 digit strings, i.e. 25 -> 025"""
@@ -216,10 +252,13 @@ def round_sig(x, sig=3):
 		return 0
 	return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
 
-def process_image(distance, centre=None, exposure=None, normalise=False):
+def process_image(distance, centre=None, exposure=None, normalise=False, input_scale_factor = None):
 	"""Process a single beam image and return all derived quantities."""
 	#path = f"{base_path}{to3string(distance)}_0_12_097ms.bmp"
-	path = f"{base_path}{to4string(distance)}" + end_path
+	if mode <= 1:
+		path = f"{base_path}{to3string(distance)}" + end_path
+	else:
+		path = f"{base_path}{to4string(distance)}" + end_path
 	img = plt.imread(path)
 	if img.ndim == 3:
 		img = img.mean(axis=2)
@@ -228,6 +267,13 @@ def process_image(distance, centre=None, exposure=None, normalise=False):
 	# exposure handling
 	if exposure is None:
 		exposure = default_exposure
+
+	if mode >= 2:#subtract lamp light
+		lampImage = plt.imread("Spec_Voltage_Norm_Images/2.1_Laser_Off_8.488.bmp")
+		if lampImage.ndim == 3:
+			lampImage = lampImage.mean(axis=2)
+		img = img - lampImage
+
 	img = img / (exposure * 255) #gives unscaled intensity values to each pixel
 
 	sf = 1
@@ -267,7 +313,15 @@ def process_image(distance, centre=None, exposure=None, normalise=False):
 	P_total = np.trapezoid(P_r_unnorm * r, r)#Integrates over r to get the power, need to apply a scale factor so it equals the total measured power
 	P_encircled = cumtrapz(P_r_unnorm * r, r, initial=0)
 	#print(distance, P_total)
-	scale_factor = p_total / (P_total)
+	scale_factor = 0
+	if mode <= 1:
+		scale_factor = p_total / (P_total) #scale factor for just beam plots
+	elif input_scale_factor is not None:
+		scale_factor = input_scale_factor #input scale factor
+	else:
+		scale_factor = p_total/P_total #default
+	#print(scale_factor)
+
 	#Total measured power is known
 
 	profile_x = r * pixel_size #radial size in m
@@ -285,17 +339,80 @@ def process_image(distance, centre=None, exposure=None, normalise=False):
 	polar_xlabel = "θ (radians)"
 	polar_ylabel = "r (pixels)"
 
-	return img, polar_img, profile_x, profile_y, P_total, (cx, cy), polar_extent, polar_xlabel, polar_ylabel, profile_label, I_Peak, I_avg_area_scaled, I_Ave_Peak
+	return img, polar_img, profile_x, profile_y, \
+		P_total, (cx, cy), polar_extent, \
+		polar_xlabel, polar_ylabel, profile_label, \
+		I_Peak, I_avg_area_scaled, I_Ave_Peak, scale_factor
 
+
+def detect_pre_absorption_scale_factor(results, rel_tol=0.02, baseline_count=10):
+    """
+    Detects the 'flat' region of scale factors (no absorption),
+    averages them, and returns indices/values to use.
+
+    Parameters
+    ----------
+    results : dict
+        Dict keyed by distance/voltage; must contain "scale_factor".
+    rel_tol : float
+        Allowed relative deviation from baseline (e.g. 0.02 = 2%).
+    baseline_count : int
+        Number of initial points to use to estimate baseline.
+
+    Returns
+    -------
+    clean_indices : list[int]
+        Indices (in sorted order) of the pre-absorption region.
+    clean_values : np.ndarray
+        Scale factors in that region.
+    k_mean : float
+        Average scale factor over the pre-absorption region.
+    distances_sorted : list
+        Distances/voltages in sorted order (for mapping indices back).
+    all_scale_factors : np.ndarray
+        All scale factors in sorted order.
+    """
+    distances_sorted = sorted(results.keys())
+    all_scale_factors = np.array([results[d]["scale_factor"] for d in distances_sorted])
+
+    if len(all_scale_factors) <= baseline_count:
+        # Not enough points to detect absorption – just use all
+        clean_indices = list(range(len(all_scale_factors)))
+        clean_values = all_scale_factors.copy()
+        k_mean = clean_values.mean()
+        return clean_indices, clean_values, k_mean, distances_sorted, all_scale_factors
+
+    # Baseline from the first 'baseline_count' points
+    baseline_vals = all_scale_factors[:baseline_count]
+    baseline = np.median(baseline_vals)
+
+    rel_dev = np.abs(all_scale_factors - baseline) / baseline
+
+    # Find first index where deviation exceeds tolerance
+    # Everything BEFORE that is considered non-absorbing
+    cutoff_idx = len(all_scale_factors)  # default: use all if nothing deviates
+    for i in range(baseline_count, len(all_scale_factors)):
+        if rel_dev[i] > rel_tol:
+            cutoff_idx = i
+            break
+
+    clean_indices = list(range(cutoff_idx))
+    clean_values = all_scale_factors[clean_indices]
+    k_mean = clean_values.mean()
+
+    return clean_indices, clean_values, k_mean, distances_sorted, all_scale_factors
 
 # --- Process all images ---
 results = {}
 for d, info in beam_images.items():
-	img, polar_img, x_prof, y_prof, P, centre, polar_extent, polar_xlabel, polar_ylabel, profile_label, I_max, I_ave_profile, I_ave_peak = process_image(
+
+	img, polar_img, x_prof, y_prof, P, centre, \
+		polar_extent, polar_xlabel, polar_ylabel, \
+		profile_label, I_max, I_ave_profile, I_ave_peak, scale_factor = process_image(
 		d,
 		centre=info.get("centre"),
 		exposure = info.get("exposure") or default_exposure,
-		normalise=allNormal,
+		normalise=allNormal, input_scale_factor=k_mean_global
 	)
 
 	results[d] = {
@@ -304,6 +421,7 @@ for d, info in beam_images.items():
 		"x_prof": x_prof,
 		"y_prof": y_prof,
 		"P_total": P,
+		"scale_factor": scale_factor,
 		"centre": centre,
 		"polar_extent": polar_extent,
 		"polar_xlabel": polar_xlabel,
@@ -313,6 +431,17 @@ for d, info in beam_images.items():
 		"I_Ave_profile" : I_ave_profile,
 		"I_Ave_max": I_ave_peak,
 	}
+
+if saveNewScaleFactorMean:
+    clean_indices, clean_values, k_mean_global, distances_sorted, all_k = \
+        detect_pre_absorption_scale_factor(results)
+    
+    print("New calibration k_mean =", k_mean_global)
+    save_kmean(k_mean_global)
+
+else:
+    print("Using previously saved calibration k_mean =", k_mean_global)
+
 
 if plot_main:
 	# --- Decide what to plot ---
