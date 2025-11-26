@@ -49,16 +49,16 @@ if mode >= 2:
 		# We want to generate a new calibration
 		k_mean_global = None
 	else:
-        # Use existing calibration
+		# Use existing calibration
 		k_mean_global = load_kmean()
 		if k_mean_global is None:
 			raise RuntimeError(
-                "saveNewScaleFactorMean=False but no k_mean_calibration.json exists."
-            )
+				"saveNewScaleFactorMean=False but no k_mean_calibration.json exists."
+			)
 
 else:
-    # In mode 0/1 always do calibration
-    k_mean_global = None
+	# In mode 0/1 always do calibration
+	k_mean_global = None
 
 h = 6.62607015e-34  # Planck's constant (J·s)
 c = 2.99792458e8    # speed of light (m/s)
@@ -346,61 +346,61 @@ def process_image(distance, centre=None, exposure=None, normalise=False, input_s
 
 
 def detect_pre_absorption_scale_factor(results, rel_tol=0.02, baseline_count=10):
-    """
-    Detects the 'flat' region of scale factors (no absorption),
-    averages them, and returns indices/values to use.
+	"""
+	Detects the 'flat' region of scale factors (no absorption),
+	averages them, and returns indices/values to use.
 
-    Parameters
-    ----------
-    results : dict
-        Dict keyed by distance/voltage; must contain "scale_factor".
-    rel_tol : float
-        Allowed relative deviation from baseline (e.g. 0.02 = 2%).
-    baseline_count : int
-        Number of initial points to use to estimate baseline.
+	Parameters
+	----------
+	results : dict
+		Dict keyed by distance/voltage; must contain "scale_factor".
+	rel_tol : float
+		Allowed relative deviation from baseline (e.g. 0.02 = 2%).
+	baseline_count : int
+		Number of initial points to use to estimate baseline.
 
-    Returns
-    -------
-    clean_indices : list[int]
-        Indices (in sorted order) of the pre-absorption region.
-    clean_values : np.ndarray
-        Scale factors in that region.
-    k_mean : float
-        Average scale factor over the pre-absorption region.
-    distances_sorted : list
-        Distances/voltages in sorted order (for mapping indices back).
-    all_scale_factors : np.ndarray
-        All scale factors in sorted order.
-    """
-    distances_sorted = sorted(results.keys())
-    all_scale_factors = np.array([results[d]["scale_factor"] for d in distances_sorted])
+	Returns
+	-------
+	clean_indices : list[int]
+		Indices (in sorted order) of the pre-absorption region.
+	clean_values : np.ndarray
+		Scale factors in that region.
+	k_mean : float
+		Average scale factor over the pre-absorption region.
+	distances_sorted : list
+		Distances/voltages in sorted order (for mapping indices back).
+	all_scale_factors : np.ndarray
+		All scale factors in sorted order.
+	"""
+	distances_sorted = sorted(results.keys())
+	all_scale_factors = np.array([results[d]["scale_factor"] for d in distances_sorted])
 
-    if len(all_scale_factors) <= baseline_count:
-        # Not enough points to detect absorption – just use all
-        clean_indices = list(range(len(all_scale_factors)))
-        clean_values = all_scale_factors.copy()
-        k_mean = clean_values.mean()
-        return clean_indices, clean_values, k_mean, distances_sorted, all_scale_factors
+	if len(all_scale_factors) <= baseline_count:
+		# Not enough points to detect absorption – just use all
+		clean_indices = list(range(len(all_scale_factors)))
+		clean_values = all_scale_factors.copy()
+		k_mean = clean_values.mean()
+		return clean_indices, clean_values, k_mean, distances_sorted, all_scale_factors
 
-    # Baseline from the first 'baseline_count' points
-    baseline_vals = all_scale_factors[:baseline_count]
-    baseline = np.median(baseline_vals)
+	# Baseline from the first 'baseline_count' points
+	baseline_vals = all_scale_factors[:baseline_count]
+	baseline = np.median(baseline_vals)
 
-    rel_dev = np.abs(all_scale_factors - baseline) / baseline
+	rel_dev = np.abs(all_scale_factors - baseline) / baseline
 
-    # Find first index where deviation exceeds tolerance
-    # Everything BEFORE that is considered non-absorbing
-    cutoff_idx = len(all_scale_factors)  # default: use all if nothing deviates
-    for i in range(baseline_count, len(all_scale_factors)):
-        if rel_dev[i] > rel_tol:
-            cutoff_idx = i
-            break
+	# Find first index where deviation exceeds tolerance
+	# Everything BEFORE that is considered non-absorbing
+	cutoff_idx = len(all_scale_factors)  # default: use all if nothing deviates
+	for i in range(baseline_count, len(all_scale_factors)):
+		if rel_dev[i] > rel_tol:
+			cutoff_idx = i
+			break
 
-    clean_indices = list(range(cutoff_idx))
-    clean_values = all_scale_factors[clean_indices]
-    k_mean = clean_values.mean()
+	clean_indices = list(range(cutoff_idx))
+	clean_values = all_scale_factors[clean_indices]
+	k_mean = clean_values.mean()
 
-    return clean_indices, clean_values, k_mean, distances_sorted, all_scale_factors
+	return clean_indices, clean_values, k_mean, distances_sorted, all_scale_factors
 
 # --- Process all images ---
 results = {}
@@ -433,14 +433,14 @@ for d, info in beam_images.items():
 	}
 
 if saveNewScaleFactorMean:
-    clean_indices, clean_values, k_mean_global, distances_sorted, all_k = \
-        detect_pre_absorption_scale_factor(results)
-    
-    print("New calibration k_mean =", k_mean_global)
-    save_kmean(k_mean_global)
+	clean_indices, clean_values, k_mean_global, distances_sorted, all_k = \
+		detect_pre_absorption_scale_factor(results)
+	
+	print("New calibration k_mean =", k_mean_global)
+	save_kmean(k_mean_global)
 
 else:
-    print("Using previously saved calibration k_mean =", k_mean_global)
+	print("Using previously saved calibration k_mean =", k_mean_global)
 
 
 if plot_main:
@@ -535,7 +535,13 @@ if plot_main:
 	plt.subplots_adjust(hspace=0.1, wspace=0.25)
 
 	if focus_distance != None and save_all_plots:
-		plt.savefig(to3string(focus_distance)+"_Plots_new", dpi=300, bbox_inches='tight')
+		if mode == 0:
+			plt.savefig(to3string(focus_distance)+"_Plots", dpi=300, bbox_inches='tight')
+		elif mode == 1:
+			plt.savefig(to3string(focus_distance)+"_Plots_new", dpi=300, bbox_inches='tight')
+		else:
+			plt.savefig(to3string(focus_distance)+"_Plots_new_spec", dpi=300, bbox_inches='tight')
+		
 
 	plt.show()
 
@@ -585,8 +591,12 @@ if focus_distance is None:
 	plt.title("Radial Intensity Profiles Heatmap")
 
 	ax = plt.gca()
-	ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
-	ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+	if mode == 2:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+	else:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+	
+	ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
 	plt.tight_layout()
 
@@ -594,7 +604,12 @@ if focus_distance is None:
 
 
 	if save_all_plots:
-		plt.savefig("I_r_heatmap_new.png", dpi=300, bbox_inches='tight')
+		if mode == 0:
+			plt.savefig("I_r_heatmap.png", dpi=300, bbox_inches='tight')
+		elif mode == 1:
+			plt.savefig("I_r_heatmap_new.png", dpi=300, bbox_inches='tight')
+		else:
+			plt.savefig("I_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
 
 	plt.show()
 
@@ -632,15 +647,24 @@ if focus_distance is None:
 	plt.title("Encircled-Average Intensity Profiles Heatmap")
 
 	ax = plt.gca()
-	ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
-	ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+	if mode == 2:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+	else:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+	
+	ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
 	plt.tight_layout()
 
 	plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
 
 	if save_all_plots:
-		plt.savefig("I_Ave_r_heatmap_new.png", dpi=300, bbox_inches='tight')
+		if mode == 0:
+			plt.savefig("I_Ave_r_heatmap.png", dpi=300, bbox_inches='tight')
+		elif mode == 1:
+			plt.savefig("I_Ave_r_heatmap_new.png", dpi=300, bbox_inches='tight')
+		else:
+			plt.savefig("I_Ave_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
 
 	plt.show()
 
@@ -656,8 +680,12 @@ if focus_distance is None:
 	plt.title("Peak intensity vs distance")
 
 	ax = plt.gca()
-	ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
-	ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+	if mode == 2:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+	else:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+	
+	ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
 	plt.tight_layout()
 	plt.legend(loc="lower right")
@@ -665,7 +693,13 @@ if focus_distance is None:
 	plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
 
 	if save_all_plots:
-		plt.savefig("I_max_distance_graph_new", dpi=300, bbox_inches='tight')
+		if mode == 0:
+			plt.savefig("I_max_distance_graph", dpi=300, bbox_inches='tight')
+		elif mode == 1:
+			plt.savefig("I_max_distance_graph_new", dpi=300, bbox_inches='tight')
+		else:
+			plt.savefig("I_max_distance_graph_new_spec", dpi=300, bbox_inches='tight')
+	
 	plt.show()
 
 else:
@@ -810,15 +844,24 @@ plt.title("Peak intensity vs distance")
 plt.legend(loc="lower right")
 
 ax = plt.gca()
-ax.xaxis.set_minor_locator(AutoMinorLocator(4))   # 4 intervals → 3 minor ticks
-ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+if mode == 2:
+	ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+else:
+	ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+
+ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
 plt.tight_layout()
 
 plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
 
 if save_all_plots:
-	plt.savefig("I_max_distance_graph_errors_new", dpi=300, bbox_inches='tight')
+	if mode == 0:
+		plt.savefig("I_max_distance_graph_errors", dpi=300, bbox_inches='tight')
+	elif mode == 1:
+		plt.savefig("I_max_distance_graph_errors_new", dpi=300, bbox_inches='tight')
+	else:
+		plt.savefig("I_max_distance_graph_errors_new_spec", dpi=300, bbox_inches='tight')
 
 plt.show()
 
@@ -865,39 +908,114 @@ print("\\end{table}")
 
 
 def compute_and_plot_pixel_sums(results):
-    """
-    Computes the total (unscaled) pixel sum of each raw image
-    and plots pixel-sum vs. distance.
+	"""
+	Computes the total (unscaled) pixel sum of each raw image
+	and plots pixel-sum vs. distance.
 
-    Parameters
-    ----------
-    results : dict
-        The results dictionary populated after process_image().
+	Parameters
+	----------
+	results : dict
+		The results dictionary populated after process_image().
 
-    Returns
-    -------
-    distances : np.ndarray
-        Sorted array of distances.
-    pixel_sums : np.ndarray
-        Total pixel value for each distance.
-    """
-    distances = np.array(sorted(results.keys()))
-    pixel_sums = np.array([np.sum(results[d]["img"]) for d in distances])
+	Returns
+	-------
+	distances : np.ndarray
+		Sorted array of distances.
+	pixel_sums : np.ndarray
+		Total pixel value for each distance.
+	"""
+	distances = np.array(sorted(results.keys()))
+	pixel_sums = np.array([np.sum(results[d]["img"]) for d in distances])
 
-    plt.figure(figsize=(8, 5))
-    plt.plot(distances, pixel_sums, "o-", zorder=1)
-    plt.xlabel("Voltage (mV)")
-    plt.ylabel("Total pixel sum (arb.)")
-    plt.title("Sum of all pixel values vs. distance")
+	plt.figure(figsize=(8, 5))
+	plt.plot(distances, pixel_sums, "o-", zorder=1)
+	plt.xlabel("Voltage (mV)")
+	plt.ylabel("Total pixel sum (arb.)")
+	plt.title("Sum of all pixel values vs. distance")
 
-    ax = plt.gca()
-    ax.xaxis.set_minor_locator(AutoMinorLocator(4))
-    ax.yaxis.set_minor_locator(AutoMinorLocator(4))
+	ax = plt.gca()
 
-    plt.tight_layout()
-    plt.show()
+	if mode == 2:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+	else:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+	
+	ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
-    return distances, pixel_sums
+	plt.tight_layout()
+	plt.show()
+
+	return distances, pixel_sums
 
 
-distances, pixel_sums = compute_and_plot_pixel_sums(results)
+#distances, pixel_sums = compute_and_plot_pixel_sums(results)
+
+# --- Integrated (scaled) total power vs voltage ---
+
+# Distances/voltages sorted
+voltages = np.array(sorted(results.keys()))
+
+# Unscaled total integrated power from each image
+P_unscaled = np.array([results[v]["P_total"] for v in voltages])
+
+# Scaled powers: P_scaled = P_total × k_mean_global
+P_scaled = P_unscaled * k_mean_global
+
+plt.figure(figsize=(8, 5))
+plt.plot(voltages, P_scaled, "o-", color="tab:blue", lw=2, markersize=6)
+
+plt.xlabel("Voltage (mV)")
+plt.ylabel("Integrated power (W)")
+plt.title("Integrated, Scaled Power vs. Applied Voltage")
+
+ax = plt.gca()
+if mode == 2:
+	ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+else:
+	ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+
+plt.grid(False)
+plt.tight_layout()
+
+# Optional: save
+
+if save_all_plots:
+	if mode == 0:
+		plt.savefig("scaled_power_vs_distance.png", dpi=300, bbox_inches='tight')
+	elif mode == 1:
+		plt.savefig("scaled_power_vs_distance_new.png", dpi=300, bbox_inches='tight')
+	else:
+		plt.savefig("scaled_power_vs_voltage.png", dpi=300, bbox_inches='tight')
+
+plt.show()
+
+
+plt.figure(figsize=(8, 5))
+plt.plot(voltages, P_scaled/np.max(P_scaled), "o-", color="tab:blue", lw=2, markersize=6)
+
+plt.xlabel("Voltage (mV)")
+plt.ylabel("Transmission")
+plt.title("Transmission vs. Applied Voltage")
+
+ax = plt.gca()
+if mode == 2:
+	ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+else:
+	ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+
+plt.grid(False)
+plt.tight_layout()
+
+# Optional: save
+
+if save_all_plots:
+	if mode == 0:
+		plt.savefig("Transmission_vs_distance.png", dpi=300, bbox_inches='tight')
+	elif mode == 1:
+		plt.savefig("Transmission_vs_distance_new.png", dpi=300, bbox_inches='tight')
+	else:
+		plt.savefig("Transmission_vs_voltage.png", dpi=300, bbox_inches='tight')
+
+plt.show()
