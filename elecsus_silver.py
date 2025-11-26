@@ -33,7 +33,7 @@ E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,E
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
 Temp = 25
-AgNumberDensity = 1e16
+AgNumberDensity = 2.5e15
 Dline = 'D2'
 lcell = 75e-3
 Bfield = 0
@@ -78,7 +78,8 @@ p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Bt
 
 [S0_2] = mf.get_spectra(Detuning,E_in,p_dict3,outputs=['S0'])
 
-plt.figure(figsize=(5, 3.5))
+#plt.figure(figsize=(5, 3.5))
+plt.figure(figsize=(8, 5))
 
 colours = ['deepskyblue', 'firebrick', 'purple', 'darkkhaki', 'orange', 'pink']
 
@@ -185,13 +186,13 @@ if ShowTransPlot:
 	img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
 	plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
 
-plt.ylim([0, 1.2])
+#plt.ylim([0, 1.2])
 plt.xlim([-8.5,8.5])
 
-plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
+#plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
 plt.xticks([-8, -4, 0, 4, 8])
 
-plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voight_full.pdf", dpi=600, bbox_inches='tight')
+plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voight_adjusted.png", dpi=600, bbox_inches='tight')
 
 #plt.legend()
 
