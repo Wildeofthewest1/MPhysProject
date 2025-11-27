@@ -30,10 +30,10 @@ if mode == 2:
 	import json
 
 	# Toggle this to control calibration behaviour
-	saveNewScaleFactorMean = False  # True  → recompute and save new k_mean
-							# False → load existing k_mean from file
+	saveNewScaleFactorMean = False # True  → recompute and save new k_mean # False → load existing k_mean from file
+	#saveNewScaleFactorMean = True
 
-	kmean_file = "k_mean_calibration.json"
+	kmean_file = "k_mean_calibration_2.json"
 
 	def save_kmean(k_mean):
 		with open(kmean_file, "w") as f:
@@ -82,14 +82,14 @@ rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
 focus_distance = None # Only show a certain distance
 plot_main = False
-save_all_plots = True
+#save_all_plots = True
 save_all_plots = False
 
 pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
 photon_energy = h * c / wavelength
 
-p_total = 1.02e-6#1.21e-6
+p_total = 1.21e-6 #1.02e-6#1.21e-6
 p_total_error = 0.05e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
 
@@ -147,6 +147,7 @@ elif mode == 1:
 	base_path = "Camera_images_new/"
 	end_path = "_1_8.488.bmp"
 else:
+	"""
 	beam_images = {
 		0:   {"centre": (740, 543), "exposure": 8.488e-3},
 		50:   {"centre": (740, 543), "exposure": 8.488e-3},
@@ -233,6 +234,288 @@ else:
 	}
 	base_path = "Camera_Spec_Voltage/"
 	end_path = "mV_8.488_450.bmp"
+	"""
+	beam_images = {
+		0:   {"centre": (718, 556), "exposure": 6.107-3},
+		1500:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1510:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1520:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1530:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1540:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1550:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1560:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1570:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1580:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1590:  {"centre": (718, 556), "exposure": 6.107e-3},
+
+		1600:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1610:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1620:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1630:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1640:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1650:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1660:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1670:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1680:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1690:  {"centre": (718, 556), "exposure": 6.107e-3},
+
+		1700:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1710:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1720:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1730:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1740:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1750:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1760:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1770:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1780:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1790:  {"centre": (718, 556), "exposure": 6.107e-3},
+
+		1800:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1810:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1820:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1830:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1840:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1850:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1860:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1870:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1880:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1890:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		1900:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1910:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1920:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1930:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1940:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1950:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1960:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1970:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1980:  {"centre": (718, 556), "exposure": 6.107e-3},
+		1990:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2000:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2010:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2020:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2030:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2040:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2050:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2060:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2070:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2080:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2090:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2100:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2110:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2120:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2130:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2140:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2150:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2160:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2170:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2180:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2190:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2200:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2210:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2220:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2230:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2240:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2250:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2260:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2270:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2280:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2290:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2300:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2310:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2320:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2330:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2340:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2350:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2360:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2370:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2380:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2390:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2400:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2410:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2420:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2430:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2440:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2450:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2460:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2470:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2480:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2490:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2500:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2510:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2520:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2530:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2540:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2550:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2560:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2570:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2580:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2590:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2600:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2610:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2620:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2630:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2640:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2650:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2660:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2670:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2680:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2690:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2700:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2710:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2720:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2730:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2740:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2750:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2760:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2770:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2780:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2790:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2800:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2810:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2820:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2830:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2840:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2850:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2860:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2870:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2880:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2890:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		2900:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2910:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2920:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2930:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2940:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2950:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2960:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2970:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2980:  {"centre": (718, 556), "exposure": 6.107e-3},
+		2990:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3000:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3010:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3020:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3030:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3040:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3050:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3060:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3070:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3080:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3090:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3100:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3110:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3120:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3130:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3140:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3150:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3160:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3170:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3180:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3190:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3200:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3210:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3220:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3230:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3240:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3250:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3260:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3270:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3280:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3290:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3300:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3310:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3320:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3330:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3340:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3350:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3360:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3370:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3380:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3390:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3400:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3410:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3420:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3430:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3440:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3450:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3460:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3470:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3480:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3490:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3500:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3510:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3520:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3530:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3540:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3550:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3560:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3570:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3580:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3590:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3600:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3610:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3620:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3630:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3640:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3650:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3660:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3670:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3680:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3690:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3700:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3710:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3720:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3730:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3740:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3750:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3760:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3770:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3780:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3790:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3800:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3810:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3820:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3830:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3840:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3850:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3860:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3870:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3880:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3890:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		3900:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3910:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3920:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3930:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3940:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3950:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3960:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3970:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3980:  {"centre": (718, 556), "exposure": 6.107e-3},
+		3990:  {"centre": (718, 556), "exposure": 6.107e-3},
+		
+		4000: {"centre": (718, 556), "exposure": 6.107e-3},
+	}
+	base_path = "Voltage_Spec_2/"
+	end_path = "_mV_6.107ms_450mm.bmp"
 
 default_exposure = 12.097e-3  # s
 exposure_error = 0.001
@@ -271,7 +554,8 @@ def process_image(distance, centre=None, exposure=None, normalise=False, input_s
 	if mode == 2:
 
 		# --- 1. Load lamp-only image (laser OFF, lamp ON) ---
-		lampImage = plt.imread("Camera_Spec_Voltage/Laser_Off_8.488_450.bmp")
+		#lampImage = plt.imread("Camera_Spec_Voltage/Laser_Off_8.488_450.bmp")
+		lampImage = plt.imread("Voltage_Spec_2/lamp.bmp")
 		if lampImage.ndim == 3:
 			lampImage = lampImage.mean(axis=2)
 
@@ -1015,7 +1299,7 @@ if normalTransmission and mode == 2:
 	plt.ylabel("Transmission")
 	plt.title("Total Transmission vs. Applied Voltage")
 else:
-	plt.plot(voltages, P_scaled/np.max(P_scaled), "o-", color="tab:blue", lw=2, markersize=6)
+	plt.plot(voltages, P_scaled, "o-", color="tab:blue", lw=2, markersize=6)#/np.max(P_scaled)
 	plt.xlabel("Voltage (mV)")
 	#plt.ylabel("Integrated power (W)")
 	plt.ylabel("Transmission")
