@@ -170,7 +170,7 @@ def format_sci_tex(num):#format long numbers in standard form
 	return rf"${coeff:.1f} \times 10^{{{exp}}}$"
 
 if choice == 1:
-	plt.text(x=-8, y=0.91, s="$N_D$"+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "left", va = "center") ##Temperature
+	plt.text(x=-8, y=0.91, s="$N_D$ = "+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "left", va = "center") ##Temperature
 
 if ShowTransPlot:
 	plt.text(x=-8, y=0.12, s="$5^2$S$_{1/2}$", fontsize=fontsz, ha = "left", va = "center")#5s2S1/2
@@ -192,7 +192,7 @@ plt.xlim([-8.5,8.5])
 #plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
 plt.xticks([-8, -4, 0, 4, 8])
 
-plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voight_adjusted.png", dpi=600, bbox_inches='tight')
+plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voigt_adjusted.png", dpi=600, bbox_inches='tight')
 
 #plt.legend()
 
