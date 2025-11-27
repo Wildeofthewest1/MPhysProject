@@ -23,13 +23,14 @@ os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\
 print("Now running in:", os.getcwd())
 
 mode = 2
-
-if mode >= 2:
+normalTransmission = True
+normalTransmission = False
+if mode == 2:
 
 	import json
 
 	# Toggle this to control calibration behaviour
-	saveNewScaleFactorMean = False     # True  → recompute and save new k_mean
+	saveNewScaleFactorMean = False  # True  → recompute and save new k_mean
 							# False → load existing k_mean from file
 
 	kmean_file = "k_mean_calibration.json"
@@ -55,7 +56,6 @@ if mode >= 2:
 			raise RuntimeError(
 				"saveNewScaleFactorMean=False but no k_mean_calibration.json exists."
 			)
-
 else:
 	# In mode 0/1 always do calibration
 	k_mean_global = None
@@ -82,8 +82,8 @@ rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
 focus_distance = None # Only show a certain distance
 plot_main = False
-#save_all_plots = True
-save_all_plots = False
+save_all_plots = True
+#save_all_plots = False
 
 pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
@@ -268,13 +268,36 @@ def process_image(distance, centre=None, exposure=None, normalise=False, input_s
 	if exposure is None:
 		exposure = default_exposure
 
-	if mode >= 2:#subtract lamp light
-		lampImage = plt.imread("Spec_Voltage_Norm_Images/2.1_Laser_Off_8.488.bmp")
+	if mode == 2:
+
+		# --- 1. Load lamp-only image (laser OFF, lamp ON) ---
+		lampImage = plt.imread("Camera_Spec_Voltage/Laser_Off_8.488_450.bmp")
 		if lampImage.ndim == 3:
 			lampImage = lampImage.mean(axis=2)
+
 		img = img - lampImage
 
-	img = img / (exposure * 255) #gives unscaled intensity values to each pixel
+		if normalTransmission:
+
+			# --- 3. Load laser-only reference image (lamp OFF, laser ON, no absorption) ---
+			#NormImage = plt.imread("Spec_Voltage_Norm_Images/2.1_Lamp_off_8.488.bmp")
+			NormImage = plt.imread("Camera_Spec_Voltage/0000mV_8.488_450.bmp")
+			if NormImage.ndim == 3:
+				NormImage = NormImage.mean(axis=2)
+
+			# --- 4. Remove residual lamp from reference (just like the absorption frame) ---
+			I_ref = NormImage - lampImage   # = I0 (laser only, no absorption)
+
+			# --- 5. SAFE NORMALISATION: compute transmission T = I_atoms / I0 ---
+			img = np.divide(
+				img,             # numerator: laser with absorption
+				I_ref,                 # denominator: laser-only reference
+				out=np.ones_like(img),   # 0/0 → 1
+				where=I_ref != 0               # avoid division at zeros
+			)
+	
+	if (mode != 2) or (mode == 2 and not normalTransmission):
+		img = img / (exposure * 255) #gives unscaled intensity values to each pixel
 
 	sf = 1
 
@@ -312,20 +335,17 @@ def process_image(distance, centre=None, exposure=None, normalise=False, input_s
 	P_r_unnorm = np.trapezoid(polar_img, theta, axis=1)#gives the power per unit radial length
 	P_total = np.trapezoid(P_r_unnorm * r, r)#Integrates over r to get the power, need to apply a scale factor so it equals the total measured power
 	P_encircled = cumtrapz(P_r_unnorm * r, r, initial=0)
-	#print(distance, P_total)
-	scale_factor = 0
-	if mode <= 1:
-		scale_factor = p_total / (P_total) #scale factor for just beam plots
-	elif input_scale_factor is not None:
+
+	if mode == 2 and input_scale_factor is not None:
 		scale_factor = input_scale_factor #input scale factor
 	else:
-		scale_factor = p_total/P_total #default
-	#print(scale_factor)
-
-	#Total measured power is known
+		scale_factor = p_total / (P_total) #scale factor for just beam plots
 
 	profile_x = r * pixel_size #radial size in m
-	profile_y = (P_r_unnorm * (scale_factor / pixel_area)) / (np.pi * 2) # average intensity per radius
+	if normalTransmission and mode == 2:
+		profile_y = P_r_unnorm / (np.pi * 2)
+	else:
+		profile_y = (P_r_unnorm * (scale_factor / pixel_area)) / (np.pi * 2) # average intensity per radius
 	r_safe = r.copy()
 	r_safe[0] = r_safe[1]
 	I_avg_area = P_encircled / (np.pi * r_safe**2)  # avoid divide-by-zero at r=0
@@ -343,7 +363,6 @@ def process_image(distance, centre=None, exposure=None, normalise=False, input_s
 		P_total, (cx, cy), polar_extent, \
 		polar_xlabel, polar_ylabel, profile_label, \
 		I_Peak, I_avg_area_scaled, I_Ave_Peak, scale_factor
-
 
 def detect_pre_absorption_scale_factor(results, rel_tol=0.02, baseline_count=10):
 	"""
@@ -560,11 +579,19 @@ if focus_distance is None:
 	r_common = np.linspace(0, max(r_values), 500)
 	I_profiles = []
 
-	for d in distances:
-		x_prof = results[d]["x_prof"]
-		y_prof = results[d]["y_prof"]
-		I_interp = np.interp(r_common, x_prof, y_prof)/I_sat
-		I_profiles.append(I_interp)
+	if normalTransmission and mode == 2:
+		for d in distances:
+			img_T = results[d]["img"]          # this is already T = I/I0
+			# compute radial average of transmission
+			r_prof = 1-results[d]["y_prof"]#np.mean(results[d]["polar_img"], axis=1)
+			I_interp = np.interp(r_common, results[d]["x_prof"], r_prof)
+			I_profiles.append(I_interp)
+	else:
+		for d in distances:
+			x_prof = results[d]["x_prof"]
+			y_prof = results[d]["y_prof"]
+			I_interp = np.interp(r_common, x_prof, y_prof)/I_sat
+			I_profiles.append(I_interp)
 
 	I_profiles = np.array(I_profiles)  # shape = (num_distances, num_r_points)
 
@@ -582,11 +609,17 @@ if focus_distance is None:
 		cmap='CMRmap',
 		interpolation='bilinear'
 	)
-	cbar = plt.colorbar(label=r"$I(r)$ / $I_{sat}$")
+	if mode == 2 and normalTransmission:
+		cbar = plt.colorbar(label=r"Transmission")
+	else:
+		cbar = plt.colorbar(label=r"$I(r)$ / $I_{sat}$")
 	cbar.formatter.set_powerlimits((-3, 3))
 	cbar.formatter.set_useMathText(True)
 	cbar.update_ticks()
-	plt.xlabel("Distance (mm)")
+	if mode ==2:
+		plt.xlabel("Voltage (mV)")
+	else:
+		plt.xlabel("Distance (mm)")
 	plt.ylabel("Radius (mm)")
 	plt.title("Radial Intensity Profiles Heatmap")
 
@@ -611,301 +644,315 @@ if focus_distance is None:
 		else:
 			plt.savefig("I_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
 
+	if mode == 2:
+		plt.ylim([0,1.4])
+
 	plt.show()
 
+	showAvePlot = False
 	# --- Create a heatmap of all ⟨I⟩(r) profiles (encircled average intensity vs distance) ---
+	if showAvePlot:
+		# Interpolate all ⟨I⟩(r) profiles to the same r grid
+		I_Ave_profiles = []
 
-	# Interpolate all ⟨I⟩(r) profiles to the same r grid
-	I_Ave_profiles = []
+		for d in distances:
+			x_prof = results[d]["x_prof"]
+			y_ave = results[d]["I_Ave_profile"]
+			I_Ave_interp = np.interp(r_common, x_prof, y_ave)/I_sat
+			I_Ave_profiles.append(I_Ave_interp)
 
-	for d in distances:
-		x_prof = results[d]["x_prof"]
-		y_ave = results[d]["I_Ave_profile"]
-		I_Ave_interp = np.interp(r_common, x_prof, y_ave)/I_sat
-		I_Ave_profiles.append(I_Ave_interp)
+		I_Ave_profiles = np.array(I_Ave_profiles)  # shape = (num_distances, num_r_points)
+		I_Ave_profiles = I_Ave_profiles.T  # transpose so radius is on y-axis
 
-	I_Ave_profiles = np.array(I_Ave_profiles)  # shape = (num_distances, num_r_points)
-	I_Ave_profiles = I_Ave_profiles.T  # transpose so radius is on y-axis
-
-	# Create the heatmap
-	plt.figure(figsize=(10, 6))
-	extent = [distances[0], distances[-1], r_common[0]*1e3, r_common[-1]*1e3]  # x=distance (mm), y=radius (mm)
-	plt.imshow(
-		I_Ave_profiles,
-		extent=extent,
-		aspect='auto',
-		origin='lower',
-		cmap='CMRmap',
-		interpolation='bilinear'
-	)
-	cbar = plt.colorbar(label=r"$I_{avg}(r)$ / $I_{sat}$")
-	cbar.formatter.set_powerlimits((-3, 3))
-	cbar.formatter.set_useMathText(True)
-	cbar.update_ticks()
-	plt.xlabel("Distance (mm)")
-	plt.ylabel("Radius (mm)")
-	plt.title("Encircled-Average Intensity Profiles Heatmap")
-
-	ax = plt.gca()
-	if mode == 2:
-		ax.xaxis.set_minor_locator(AutoMinorLocator(10))
-	else:
-		ax.xaxis.set_minor_locator(AutoMinorLocator(4))
-	
-	ax.yaxis.set_minor_locator(AutoMinorLocator(5))
-
-	plt.tight_layout()
-
-	plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
-
-	if save_all_plots:
-		if mode == 0:
-			plt.savefig("I_Ave_r_heatmap.png", dpi=300, bbox_inches='tight')
-		elif mode == 1:
-			plt.savefig("I_Ave_r_heatmap_new.png", dpi=300, bbox_inches='tight')
+		# Create the heatmap
+		plt.figure(figsize=(10, 6))
+		extent = [distances[0], distances[-1], r_common[0]*1e3, r_common[-1]*1e3]  # x=distance (mm), y=radius (mm)
+		plt.imshow(
+			I_Ave_profiles,
+			extent=extent,
+			aspect='auto',
+			origin='lower',
+			cmap='CMRmap',
+			interpolation='bilinear'
+		)
+		cbar = plt.colorbar(label=r"$I_{avg}(r)$ / $I_{sat}$")
+		cbar.formatter.set_powerlimits((-3, 3))
+		cbar.formatter.set_useMathText(True)
+		cbar.update_ticks()
+		if mode ==2:
+			plt.xlabel("Voltage (mV)")
 		else:
-			plt.savefig("I_Ave_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
+			plt.xlabel("Distance (mm)")
+		plt.ylabel("Radius (mm)")
+		plt.title("Encircled-Average Intensity Profiles Heatmap")
 
-	plt.show()
-
-	distances = list(results.keys())
-	I_max_values = np.array([results[d]["I_max"] for d in distances]) / I_sat
-	I_Ave_max_values = np.array([results[d]["I_Ave_max"] for d in distances]) / I_sat
-
-	plt.figure(figsize=(8, 5))
-	plt.plot(distances, I_max_values, "o-", color="tab:red", zorder = 1, label = r"Peak $I(r)$")
-	plt.plot(distances, I_Ave_max_values , "x-", color="tab:orange", zorder = 0, label = r"Peak $I_{avg}$")
-	plt.xlabel("Distance from 0 point (mm)")
-	plt.ylabel(r"$I_{max}$ / $I_{sat}$")
-	plt.title("Peak intensity vs distance")
-
-	ax = plt.gca()
-	if mode == 2:
-		ax.xaxis.set_minor_locator(AutoMinorLocator(10))
-	else:
-		ax.xaxis.set_minor_locator(AutoMinorLocator(4))
-	
-	ax.yaxis.set_minor_locator(AutoMinorLocator(5))
-
-	plt.tight_layout()
-	plt.legend(loc="lower right")
-
-	plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
-
-	if save_all_plots:
-		if mode == 0:
-			plt.savefig("I_max_distance_graph", dpi=300, bbox_inches='tight')
-		elif mode == 1:
-			plt.savefig("I_max_distance_graph_new", dpi=300, bbox_inches='tight')
+		ax = plt.gca()
+		if mode == 2:
+			ax.xaxis.set_minor_locator(AutoMinorLocator(10))
 		else:
-			plt.savefig("I_max_distance_graph_new_spec", dpi=300, bbox_inches='tight')
-	
-	plt.show()
+			ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+		
+		ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+
+		plt.tight_layout()
+
+		plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
+
+		if save_all_plots:
+			if mode == 0:
+				plt.savefig("I_Ave_r_heatmap.png", dpi=300, bbox_inches='tight')
+			elif mode == 1:
+				plt.savefig("I_Ave_r_heatmap_new.png", dpi=300, bbox_inches='tight')
+			else:
+				plt.savefig("I_Ave_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
+
+		plt.show()
+
+	showNonErrorsPlot = False
+
+	if showNonErrorsPlot:
+		distances = list(results.keys())
+		I_max_values = np.array([results[d]["I_max"] for d in distances]) / I_sat
+		I_Ave_max_values = np.array([results[d]["I_Ave_max"] for d in distances]) / I_sat
+
+		plt.figure(figsize=(8, 5))
+		plt.plot(distances, I_max_values, "o-", color="tab:red", zorder = 1, label = r"Peak $I(r)$")
+		plt.plot(distances, I_Ave_max_values , "x-", color="tab:orange", zorder = 0, label = r"Peak $I_{avg}$")
+		if mode ==2:
+			plt.xlabel("Voltage (mV)")
+		else:
+			plt.xlabel("Distance from 0 point (mm)")
+		plt.ylabel(r"$I_{max}$ / $I_{sat}$")
+		plt.title("Peak intensity vs distance")
+
+		ax = plt.gca()
+		if mode == 2:
+			ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+		else:
+			ax.xaxis.set_minor_locator(AutoMinorLocator(4))
+		
+		ax.yaxis.set_minor_locator(AutoMinorLocator(5))
+
+		plt.tight_layout()
+		plt.legend(loc="lower right")
+
+		plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
+
+		if save_all_plots:
+			if mode == 0:
+				plt.savefig("I_max_distance_graph", dpi=300, bbox_inches='tight')
+			elif mode == 1:
+				plt.savefig("I_max_distance_graph_new", dpi=300, bbox_inches='tight')
+			else:
+				plt.savefig("I_max_distance_graph_new_spec", dpi=300, bbox_inches='tight')
+		
+		plt.show()
 
 else:
 	print(f"Displayed only {focus_distance} mm (single-image mode).")
 
+if not (normalTransmission and mode == 2):
+	# Collect all unscaled total powers
+	unscaled_powers = np.array([results[d]["P_total"] for d in results])
+
+	# Compute statistics
+	mean_unscaled = np.mean(unscaled_powers)
+	std_unscaled = np.std(unscaled_powers, ddof=1)  # sample standard deviation
+	sem_unscaled = std_unscaled / np.sqrt(len(unscaled_powers))  # standard error of the mean
+
+	print(f"Mean unscaled = {mean_unscaled:.3e} W")
+	print(f"Standard deviation = {std_unscaled:.3e} W")
+	print(f"Standard error = {sem_unscaled:.3e} W")
+
+	# --- Propagate all known uncertainties ---
+
+	# (1) Scale factor from calibration
+	scale_factor = p_total / mean_unscaled
+	u_scale = scale_factor * np.sqrt(
+		(sem_unscaled / mean_unscaled) ** 2 + (p_total_error / p_total) ** 2
+	)
+
+	print(f"\nScale factor k = {scale_factor:.6g} ± {u_scale:.6g}  (rel {u_scale/scale_factor:.3%})")
+
+	# (2) Relative uncertainties
+	rel_scale_unc = u_scale / scale_factor         # from calibration
+	rel_Isat_unc = I_sat_error / I_sat             # from saturation intensity (tau etc.)
+
+	# (3) Combine them for I/I_sat
+	rel_I_div_Isat_unc = np.sqrt(rel_scale_unc**2 + rel_Isat_unc**2)
+
+	print(f"Relative uncertainty in I/I_sat: {rel_I_div_Isat_unc:.3%}")
+
+	# --- Estimate detector noise from dark region of polar images ---
+	# Uses r = 700–900 pixels region (far outside beam centre)
+	# This works better for near-field images where the beam fills the frame.
+
+	print("\nEstimating per-image noise from polar dark regions...")
+
+	r_noise_min, r_noise_max = 700, 900  # radial range (pixels) for dark background
+
+	for d in results:
+		polar = results[d]["polar_img"]
+		nr, nt = polar.shape
+
+		# Convert the target range to indices safely within bounds
+		r_idx_min = int(max(0, min(nr - 1, r_noise_min)))
+		r_idx_max = int(max(0, min(nr - 1, r_noise_max)))
+
+		if r_idx_max <= r_idx_min:
+			print(f"Warning: r range {r_noise_min}-{r_noise_max} px out of bounds for {d} mm (nr={nr}).")
+			continue
+
+		bg_region = polar[r_idx_min:r_idx_max, :].ravel()
+		sigma_pix = np.std(bg_region)
+
+		# crude de-correlation: assume ~10 pixels per independent sample
+		N_eff = max(1, bg_region.size // 10)
+		u_noise = (p_total / results[d]["P_total"]) * sigma_pix / pixel_area
+		u_noise_reduced = u_noise / np.sqrt(N_eff)
+		rel_noise = u_noise_reduced / results[d]["I_max"]
+		results[d]["rel_noise"] = rel_noise
+
+		# Optional: print summary for debugging
+		print(f"{d:>4} mm → σ_pix = {sigma_pix:.2e}, rel_noise = {rel_noise:.2%}")
 
 
-# Collect all unscaled total powers
-unscaled_powers = np.array([results[d]["P_total"] for d in results])
+	# --- Estimate uncertainty due to manual centre placement ---
+	centre_error_px = 0  # estimated uncertainty in chosen beam centre [pixels]
+	centre_error_m = centre_error_px * pixel_size
 
-# Compute statistics
-mean_unscaled = np.mean(unscaled_powers)
-std_unscaled = np.std(unscaled_powers, ddof=1)  # sample standard deviation
-sem_unscaled = std_unscaled / np.sqrt(len(unscaled_powers))  # standard error of the mean
+	print(f"\nEstimating per-image uncertainty from ±{centre_error_px:.0f} px centre placement...")
 
-print(f"Mean unscaled = {mean_unscaled:.3e} W")
-print(f"Standard deviation = {std_unscaled:.3e} W")
-print(f"Standard error = {sem_unscaled:.3e} W")
+	for d in results:
+		x_prof_m = results[d]["x_prof"]  # already in metres
+		y_prof = results[d]["y_prof"]    # I(r) profile (W/m²)
 
-# --- Propagate all known uncertainties ---
+		# Gradient of radial intensity profile
+		dy_dr = np.gradient(y_prof, x_prof_m)
+		mask = y_prof > 0.05 * np.max(y_prof)
+		g_char = np.percentile(np.abs(dy_dr[mask]), 90) if np.any(mask) else 0.0
+		rel_centre_unc = (g_char * centre_error_m) / np.max(y_prof)
+		results[d]["rel_centre_unc"] = rel_centre_unc
 
-# (1) Scale factor from calibration
-scale_factor = p_total / mean_unscaled
-u_scale = scale_factor * np.sqrt(
-	(sem_unscaled / mean_unscaled) ** 2 + (p_total_error / p_total) ** 2
-)
+		print(f"{d:>4} mm → rel_centre_unc = {rel_centre_unc:.2%}")
 
-print(f"\nScale factor k = {scale_factor:.6g} ± {u_scale:.6g}  (rel {u_scale/scale_factor:.3%})")
+	# (4) propagate to per-image peaks
+	for d in results:
+		Imax = results[d]["I_max"]
+		Iavg = results[d]["I_Ave_max"]
 
-# (2) Relative uncertainties
-rel_scale_unc = u_scale / scale_factor         # from calibration
-rel_Isat_unc = I_sat_error / I_sat             # from saturation intensity (tau etc.)
+		# Include scale, Isat, and background noise uncertainties
+		rel_noise = results[d].get("rel_noise", 0)
+		rel_centre_unc = results[d].get("rel_centre_unc", 0)
+		rel_total_unc = np.sqrt(rel_scale_unc**2 + rel_Isat_unc**2 + rel_noise**2 + rel_centre_unc**2)
 
-# (3) Combine them for I/I_sat
-rel_I_div_Isat_unc = np.sqrt(rel_scale_unc**2 + rel_Isat_unc**2)
+		Imax_norm = Imax / I_sat
+		Iavg_norm = Iavg / I_sat
+		u_Imax_norm = Imax_norm * rel_total_unc
+		u_Iavg_norm = Iavg_norm * rel_total_unc
 
-print(f"Relative uncertainty in I/I_sat: {rel_I_div_Isat_unc:.3%}")
+		# Store for optional plotting with error bars
+		results[d]["u_I_max_norm"] = u_Imax_norm
+		results[d]["u_I_avg_norm"] = u_Iavg_norm
 
-# --- Estimate detector noise from dark region of polar images ---
-# Uses r = 700–900 pixels region (far outside beam centre)
-# This works better for near-field images where the beam fills the frame.
+	# --- Optional print summary ---
+	print("\nExample propagated uncertainties:")
+	example_d = sorted(results.keys())[0]
+	print(f"At distance {example_d} mm:")
+	print(f"  I_max/I_sat = {results[example_d]['I_max']/I_sat:.3f} ± {results[example_d]['u_I_max_norm']:.3f}")
+	print(f"  I_avg/I_sat = {results[example_d]['I_Ave_max']/I_sat:.3f} ± {results[example_d]['u_I_avg_norm']:.3f}")
 
-print("\nEstimating per-image noise from polar dark regions...")
+	# --- Peak Intensity vs Distance (with error bars) ---
+	distances = list(results.keys())
+	I_max_values = np.array([results[d]["I_max"] for d in distances]) / I_sat
+	I_Ave_max_values = np.array([results[d]["I_Ave_max"] for d in distances]) / I_sat
 
-r_noise_min, r_noise_max = 700, 900  # radial range (pixels) for dark background
+	# Extract propagated uncertainties
+	u_I_max_norms = np.array([results[d]["u_I_max_norm"] for d in distances])
+	u_I_Ave_norms = np.array([results[d]["u_I_avg_norm"] for d in distances])
 
-for d in results:
-	polar = results[d]["polar_img"]
-	nr, nt = polar.shape
+	plt.figure(figsize=(8, 5))
 
-	# Convert the target range to indices safely within bounds
-	r_idx_min = int(max(0, min(nr - 1, r_noise_min)))
-	r_idx_max = int(max(0, min(nr - 1, r_noise_max)))
+	# Plot with error bars
+	plt.errorbar(
+		distances, I_max_values, yerr=u_I_max_norms,
+		fmt="o-", color="tab:red", zorder = 1, capsize=3, label=r"Peak $I(r)$"
+	)
+	plt.errorbar(
+		distances, I_Ave_max_values, yerr=u_I_Ave_norms,
+		fmt="x-", color="tab:orange", zorder = 0, capsize=3, label=r"Peak $I_{avg}$"
+	)
 
-	if r_idx_max <= r_idx_min:
-		print(f"Warning: r range {r_noise_min}-{r_noise_max} px out of bounds for {d} mm (nr={nr}).")
-		continue
-
-	bg_region = polar[r_idx_min:r_idx_max, :].ravel()
-	sigma_pix = np.std(bg_region)
-
-	# crude de-correlation: assume ~10 pixels per independent sample
-	N_eff = max(1, bg_region.size // 10)
-	u_noise = (p_total / results[d]["P_total"]) * sigma_pix / pixel_area
-	u_noise_reduced = u_noise / np.sqrt(N_eff)
-	rel_noise = u_noise_reduced / results[d]["I_max"]
-	results[d]["rel_noise"] = rel_noise
-
-	# Optional: print summary for debugging
-	print(f"{d:>4} mm → σ_pix = {sigma_pix:.2e}, rel_noise = {rel_noise:.2%}")
-
-
-# --- Estimate uncertainty due to manual centre placement ---
-centre_error_px = 2  # estimated uncertainty in chosen beam centre [pixels]
-centre_error_m = centre_error_px * pixel_size
-
-print(f"\nEstimating per-image uncertainty from ±{centre_error_px:.0f} px centre placement...")
-
-for d in results:
-	x_prof_m = results[d]["x_prof"]  # already in metres
-	y_prof = results[d]["y_prof"]    # I(r) profile (W/m²)
-
-	# Gradient of radial intensity profile
-	dy_dr = np.gradient(y_prof, x_prof_m)
-	mask = y_prof > 0.05 * np.max(y_prof)
-	g_char = np.percentile(np.abs(dy_dr[mask]), 90) if np.any(mask) else 0.0
-	rel_centre_unc = (g_char * centre_error_m) / np.max(y_prof)
-	results[d]["rel_centre_unc"] = rel_centre_unc
-
-	print(f"{d:>4} mm → rel_centre_unc = {rel_centre_unc:.2%}")
-
-# (4) propagate to per-image peaks
-for d in results:
-	Imax = results[d]["I_max"]
-	Iavg = results[d]["I_Ave_max"]
-
-	# Include scale, Isat, and background noise uncertainties
-	rel_noise = results[d].get("rel_noise", 0)
-	rel_centre_unc = results[d].get("rel_centre_unc", 0)
-	rel_total_unc = np.sqrt(rel_scale_unc**2 + rel_Isat_unc**2 + rel_noise**2 + rel_centre_unc**2)
-
-	Imax_norm = Imax / I_sat
-	Iavg_norm = Iavg / I_sat
-	u_Imax_norm = Imax_norm * rel_total_unc
-	u_Iavg_norm = Iavg_norm * rel_total_unc
-
-	# Store for optional plotting with error bars
-	results[d]["u_I_max_norm"] = u_Imax_norm
-	results[d]["u_I_avg_norm"] = u_Iavg_norm
-
-# --- Optional print summary ---
-print("\nExample propagated uncertainties:")
-example_d = sorted(results.keys())[0]
-print(f"At distance {example_d} mm:")
-print(f"  I_max/I_sat = {results[example_d]['I_max']/I_sat:.3f} ± {results[example_d]['u_I_max_norm']:.3f}")
-print(f"  I_avg/I_sat = {results[example_d]['I_Ave_max']/I_sat:.3f} ± {results[example_d]['u_I_avg_norm']:.3f}")
-
-# --- Peak Intensity vs Distance (with error bars) ---
-distances = list(results.keys())
-I_max_values = np.array([results[d]["I_max"] for d in distances]) / I_sat
-I_Ave_max_values = np.array([results[d]["I_Ave_max"] for d in distances]) / I_sat
-
-# Extract propagated uncertainties
-u_I_max_norms = np.array([results[d]["u_I_max_norm"] for d in distances])
-u_I_Ave_norms = np.array([results[d]["u_I_avg_norm"] for d in distances])
-
-plt.figure(figsize=(8, 5))
-
-# Plot with error bars
-plt.errorbar(
-	distances, I_max_values, yerr=u_I_max_norms,
-	fmt="o-", color="tab:red", zorder = 1, capsize=3, label=r"Peak $I(r)$"
-)
-plt.errorbar(
-	distances, I_Ave_max_values, yerr=u_I_Ave_norms,
-	fmt="x-", color="tab:orange", zorder = 0, capsize=3, label=r"Peak $I_{avg}$"
-)
-
-plt.xlabel("Distance from 0 point (mm)")
-plt.ylabel(r"$I_{max}$ / $I_{sat}$")
-plt.title("Peak intensity vs distance")
-plt.legend(loc="lower right")
-
-ax = plt.gca()
-if mode == 2:
-	ax.xaxis.set_minor_locator(AutoMinorLocator(10))
-else:
-	ax.xaxis.set_minor_locator(AutoMinorLocator(4))
-
-ax.yaxis.set_minor_locator(AutoMinorLocator(5))
-
-plt.tight_layout()
-
-plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
-
-if save_all_plots:
-	if mode == 0:
-		plt.savefig("I_max_distance_graph_errors", dpi=300, bbox_inches='tight')
-	elif mode == 1:
-		plt.savefig("I_max_distance_graph_errors_new", dpi=300, bbox_inches='tight')
+	if mode ==2:
+		plt.xlabel("Voltage (mV)")
 	else:
-		plt.savefig("I_max_distance_graph_errors_new_spec", dpi=300, bbox_inches='tight')
+		plt.xlabel("Distance from 0 point (mm)")
+	plt.ylabel(r"$I_{max}$ / $I_{sat}$")
+	plt.title("Peak intensity vs distance")
+	plt.legend(loc="lower right")
 
-plt.show()
+	ax = plt.gca()
+	if mode == 2:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+	else:
+		ax.xaxis.set_minor_locator(AutoMinorLocator(4))
 
-# --- Print summary table of I/I_sat values with uncertainties (scientific format) ---
-print("\n" + "-"*75)
-print(" Summary of normalised intensities (I/I_sat) with uncertainties")
-print("-"*75)
-print(f"{'Distance (mm)':>13s} | {'I_max/I_sat':>25s} | {'I_avg/I_sat':>25s}")
-print("-"*75)
+	ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
-for d in sorted(results.keys()):
-	Imax_norm = results[d]["I_max"] / I_sat
-	Iavg_norm = results[d]["I_Ave_max"] / I_sat
-	u_Imax_norm = results[d]["u_I_max_norm"]
-	u_Iavg_norm = results[d]["u_I_avg_norm"]
+	plt.tight_layout()
 
-	print(f"{d:13.0f} | {Imax_norm:10.3e} ± {u_Imax_norm:8.1e} | {Iavg_norm:10.3e} ± {u_Iavg_norm:8.1e}")
+	plt.ticklabel_format(style='sci', axis='y', scilimits=(-3, 3))
 
-print("-"*75)
+	if save_all_plots:
+		if mode == 0:
+			plt.savefig("I_max_distance_graph_errors", dpi=300, bbox_inches='tight')
+		elif mode == 1:
+			plt.savefig("I_max_distance_graph_errors_new", dpi=300, bbox_inches='tight')
+		else:
+			plt.savefig("I_max_distance_graph_errors_new_spec", dpi=300, bbox_inches='tight')
 
-# --- Generate LaTeX table output (scientific notation) ---
-print("\nLaTeX table output:\n")
-print("\\begin{table}[h]")
-print("\\centering")
-print("\\caption{Normalised peak and average intensities with propagated uncertainties.}")
-print("\\begin{tabular}{ccc}")
-print("\\hline")
-print("Distance (mm) & $I_{\\max}/I_{\\mathrm{sat}}$ & $I_{\\mathrm{avg}}/I_{\\mathrm{sat}}$\\\\")
-print("\\hline")
+	plt.show()
 
-for d in sorted(results.keys()):
-	Imax_norm = results[d]["I_max"] / I_sat
-	Iavg_norm = results[d]["I_Ave_max"] / I_sat
-	u_Imax_norm = results[d]["u_I_max_norm"]
-	u_Iavg_norm = results[d]["u_I_avg_norm"]
+	# --- Print summary table of I/I_sat values with uncertainties (scientific format) ---
+	print("\n" + "-"*75)
+	print(" Summary of normalised intensities (I/I_sat) with uncertainties")
+	print("-"*75)
+	print(f"{'Distance (mm)':>13s} | {'I_max/I_sat':>25s} | {'I_avg/I_sat':>25s}")
+	print("-"*75)
 
-	Imax_str = f"${Imax_norm:.3e} \\pm {u_Imax_norm:.1e}$"
-	Iavg_str = f"${Iavg_norm:.3e} \\pm {u_Iavg_norm:.1e}$"
-	print(f"{d:>4} & {Imax_str} & {Iavg_str} \\\\")
+	for d in sorted(results.keys()):
+		Imax_norm = results[d]["I_max"] / I_sat
+		Iavg_norm = results[d]["I_Ave_max"] / I_sat
+		u_Imax_norm = results[d]["u_I_max_norm"]
+		u_Iavg_norm = results[d]["u_I_avg_norm"]
 
-print("\\hline")
-print("\\end{tabular}")
-print("\\end{table}")
+		print(f"{d:13.0f} | {Imax_norm:10.3e} ± {u_Imax_norm:8.1e} | {Iavg_norm:10.3e} ± {u_Iavg_norm:8.1e}")
 
+	print("-"*75)
+
+	# --- Generate LaTeX table output (scientific notation) ---
+	print("\nLaTeX table output:\n")
+	print("\\begin{table}[h]")
+	print("\\centering")
+	print("\\caption{Normalised peak and average intensities with propagated uncertainties.}")
+	print("\\begin{tabular}{ccc}")
+	print("\\hline")
+	print("Distance (mm) & $I_{\\max}/I_{\\mathrm{sat}}$ & $I_{\\mathrm{avg}}/I_{\\mathrm{sat}}$\\\\")
+	print("\\hline")
+
+	for d in sorted(results.keys()):
+		Imax_norm = results[d]["I_max"] / I_sat
+		Iavg_norm = results[d]["I_Ave_max"] / I_sat
+		u_Imax_norm = results[d]["u_I_max_norm"]
+		u_Iavg_norm = results[d]["u_I_avg_norm"]
+
+		Imax_str = f"${Imax_norm:.3e} \\pm {u_Imax_norm:.1e}$"
+		Iavg_str = f"${Iavg_norm:.3e} \\pm {u_Iavg_norm:.1e}$"
+		print(f"{d:>4} & {Imax_str} & {Iavg_str} \\\\")
+
+	print("\\hline")
+	print("\\end{tabular}")
+	print("\\end{table}")
 
 def compute_and_plot_pixel_sums(results):
 	"""
@@ -947,7 +994,6 @@ def compute_and_plot_pixel_sums(results):
 
 	return distances, pixel_sums
 
-
 #distances, pixel_sums = compute_and_plot_pixel_sums(results)
 
 # --- Integrated (scaled) total power vs voltage ---
@@ -959,14 +1005,21 @@ voltages = np.array(sorted(results.keys()))
 P_unscaled = np.array([results[v]["P_total"] for v in voltages])
 
 # Scaled powers: P_scaled = P_total × k_mean_global
+
 P_scaled = P_unscaled * k_mean_global
 
 plt.figure(figsize=(8, 5))
-plt.plot(voltages, P_scaled, "o-", color="tab:blue", lw=2, markersize=6)
 
-plt.xlabel("Voltage (mV)")
-plt.ylabel("Integrated power (W)")
-plt.title("Integrated, Scaled Power vs. Applied Voltage")
+if normalTransmission and mode == 2:
+	plt.plot(voltages, P_scaled/(k_mean_global*1440*1080), "o-", color="tab:blue", lw=2, markersize=6)
+	plt.xlabel("Voltage (mV)")
+	plt.ylabel("Transmission")
+	plt.title("Total Transmission vs. Applied Voltage")
+else:
+	plt.plot(voltages, P_scaled, "o-", color="tab:blue", lw=2, markersize=6)
+	plt.xlabel("Voltage (mV)")
+	plt.ylabel("Integrated power (W)")
+	plt.title("Integrated, Scaled Power vs. Applied Voltage")
 
 ax = plt.gca()
 if mode == 2:
@@ -987,35 +1040,5 @@ if save_all_plots:
 		plt.savefig("scaled_power_vs_distance_new.png", dpi=300, bbox_inches='tight')
 	else:
 		plt.savefig("scaled_power_vs_voltage.png", dpi=300, bbox_inches='tight')
-
-plt.show()
-
-
-plt.figure(figsize=(8, 5))
-plt.plot(voltages, P_scaled/np.max(P_scaled), "o-", color="tab:blue", lw=2, markersize=6)
-
-plt.xlabel("Voltage (mV)")
-plt.ylabel("Transmission")
-plt.title("Transmission vs. Applied Voltage")
-
-ax = plt.gca()
-if mode == 2:
-	ax.xaxis.set_minor_locator(AutoMinorLocator(10))
-else:
-	ax.xaxis.set_minor_locator(AutoMinorLocator(4))
-ax.yaxis.set_minor_locator(AutoMinorLocator(5))
-
-plt.grid(False)
-plt.tight_layout()
-
-# Optional: save
-
-if save_all_plots:
-	if mode == 0:
-		plt.savefig("Transmission_vs_distance.png", dpi=300, bbox_inches='tight')
-	elif mode == 1:
-		plt.savefig("Transmission_vs_distance_new.png", dpi=300, bbox_inches='tight')
-	else:
-		plt.savefig("Transmission_vs_voltage.png", dpi=300, bbox_inches='tight')
 
 plt.show()
