@@ -83,7 +83,7 @@ rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 focus_distance = None # Only show a certain distance
 plot_main = False
 save_all_plots = True
-#save_all_plots = False
+save_all_plots = False
 
 pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
@@ -280,8 +280,8 @@ def process_image(distance, centre=None, exposure=None, normalise=False, input_s
 		if normalTransmission:
 
 			# --- 3. Load laser-only reference image (lamp OFF, laser ON, no absorption) ---
-			#NormImage = plt.imread("Spec_Voltage_Norm_Images/2.1_Lamp_off_8.488.bmp")
-			NormImage = plt.imread("Camera_Spec_Voltage/0000mV_8.488_450.bmp")
+			NormImage = plt.imread("Spec_Voltage_Norm_Images/2.1_Lamp_off_8.488.bmp")
+			#NormImage = plt.imread("Camera_Spec_Voltage/0000mV_8.488_450.bmp")
 			if NormImage.ndim == 3:
 				NormImage = NormImage.mean(axis=2)
 
@@ -583,7 +583,7 @@ if focus_distance is None:
 		for d in distances:
 			img_T = results[d]["img"]          # this is already T = I/I0
 			# compute radial average of transmission
-			r_prof = 1-results[d]["y_prof"]#np.mean(results[d]["polar_img"], axis=1)
+			r_prof = results[d]["y_prof"]#np.mean(results[d]["polar_img"], axis=1)
 			I_interp = np.interp(r_common, results[d]["x_prof"], r_prof)
 			I_profiles.append(I_interp)
 	else:
