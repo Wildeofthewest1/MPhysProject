@@ -83,7 +83,7 @@ rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 focus_distance = None # Only show a certain distance
 plot_main = False
 save_all_plots = True
-save_all_plots = False
+#save_all_plots = False
 
 pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
@@ -635,6 +635,8 @@ if focus_distance is None:
 
 	plt.ticklabel_format(style='sci', axis='both', scilimits=(-3, 3))
 
+	if mode == 2:
+		plt.ylim([0,1.4])
 
 	if save_all_plots:
 		if mode == 0:
@@ -643,9 +645,6 @@ if focus_distance is None:
 			plt.savefig("I_r_heatmap_new.png", dpi=300, bbox_inches='tight')
 		else:
 			plt.savefig("I_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
-
-	if mode == 2:
-		plt.ylim([0,1.4])
 
 	plt.show()
 
