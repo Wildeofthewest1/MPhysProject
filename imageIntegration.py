@@ -83,7 +83,7 @@ rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 focus_distance = None # Only show a certain distance
 plot_main = False
 save_all_plots = True
-#save_all_plots = False
+save_all_plots = False
 
 pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
@@ -1015,10 +1015,14 @@ if normalTransmission and mode == 2:
 	plt.ylabel("Transmission")
 	plt.title("Total Transmission vs. Applied Voltage")
 else:
-	plt.plot(voltages, P_scaled, "o-", color="tab:blue", lw=2, markersize=6)
+	plt.plot(voltages, P_scaled/np.max(P_scaled), "o-", color="tab:blue", lw=2, markersize=6)
 	plt.xlabel("Voltage (mV)")
-	plt.ylabel("Integrated power (W)")
-	plt.title("Integrated, Scaled Power vs. Applied Voltage")
+	#plt.ylabel("Integrated power (W)")
+	plt.ylabel("Transmission")
+	plt.ylim(0.4,1.1)
+	plt.axhline(1, color='grey', lw=1)
+	plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
+	#plt.title("Integrated, Scaled Power vs. Applied Voltage")
 
 ax = plt.gca()
 if mode == 2:
@@ -1028,7 +1032,7 @@ else:
 ax.yaxis.set_minor_locator(AutoMinorLocator(5))
 
 plt.grid(False)
-plt.tight_layout()
+#plt.tight_layout()
 
 # Optional: save
 
@@ -1038,6 +1042,6 @@ if save_all_plots:
 	elif mode == 1:
 		plt.savefig("scaled_power_vs_distance_new.png", dpi=300, bbox_inches='tight')
 	else:
-		plt.savefig("scaled_power_vs_voltage.png", dpi=300, bbox_inches='tight')
+		plt.savefig("P_Pmax_vs_voltage.png", dpi=300, bbox_inches='tight')
 
 plt.show()
