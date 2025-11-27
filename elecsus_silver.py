@@ -160,8 +160,10 @@ adjust = 0.17
 
 line = int(Dline[-1])
 
-plt.text(x=-8, y=1.09, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "left", va = "center") ##Ag-D2
-plt.text(x=8, y=1.09, s="{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
+Text_y = 1.04 #1.09
+
+plt.text(x=-8, y=Text_y, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "left", va = "center") ##Ag-D2
+plt.text(x=8, y=Text_y, s="{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
 
 def format_sci_tex(num):#format long numbers in standard form
 	"""Return LaTeX-style scientific notation, e.g. 3×10¹⁵."""
@@ -170,7 +172,7 @@ def format_sci_tex(num):#format long numbers in standard form
 	return rf"${coeff:.1f} \times 10^{{{exp}}}$"
 
 if choice == 1:
-	plt.text(x=-8, y=0.91, s="$N_D$ = "+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "left", va = "center") ##Temperature
+	plt.text(x=-8, y=0.95, s="$N_D$ = "+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "left", va = "center") ##Temperature
 
 if ShowTransPlot:
 	plt.text(x=-8, y=0.12, s="$5^2$S$_{1/2}$", fontsize=fontsz, ha = "left", va = "center")#5s2S1/2
@@ -186,11 +188,12 @@ if ShowTransPlot:
 	img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
 	plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
 
-#plt.ylim([0, 1.2])
+plt.ylim([0.4, 1.1])
 plt.xlim([-8.5,8.5])
 
 #plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
-plt.xticks([-8, -4, 0, 4, 8])
+plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
+plt.xticks([-8,-6, -4,-2, 0, 2, 4, 6, 8])
 
 plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voigt_adjusted.png", dpi=600, bbox_inches='tight')
 
