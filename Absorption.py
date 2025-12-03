@@ -62,11 +62,11 @@ p_total_error = 0.05e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
 
 beam_images = {	
-	#4001: {"centre": (718, 556), "exposure": 6.107e-3},
-	4001: {"centre": (740, 543), "exposure": 8.488e-3},
+	4000: {"centre": (718, 556), "exposure": 6.107e-3, "path":"Voltage_Spec_2/"},
+	4001: {"centre": (740, 543), "exposure": 8.488e-3, "path":"Spec_Voltage_Norm_Images/"},
 }
 
-cutoff = 530
+cutoff = int(1080/2)
 
 #base_path = "Voltage_Spec_2/"
 base_path = "Spec_Voltage_Norm_Images/"
@@ -90,37 +90,32 @@ def round_sig(x, sig=3):
 		return 0
 	return round(x, sig - int(np.floor(np.log10(abs(x)))) - 1)
 
-def process_image(centre=None, exposure=None, input_scale_factor = None):
+def process_image(centre=None, exposure=None, input_scale_factor=None, path_override=None):
 	"""Process a single beam image and return all derived quantities."""
+	
+	# Use entry-specific path if provided
+	path_base = path_override or base_path
 
-	path = base_path + "laser_lamp.bmp"
-	img = plt.imread(path)
-
+	# Load images using the correct folder
+	img = plt.imread(path_base + "laser_lamp.bmp")
 	if img.ndim == 3:
 		img = img.mean(axis=2)
 	ny, nx = img.shape
 
-	# exposure handling
-	if exposure is None:
-		exposure = default_exposure
-
-	lampImage = plt.imread(base_path + "lamp.bmp")
+	lampImage = plt.imread(path_base + "lamp.bmp")
 	if lampImage.ndim == 3:
 		lampImage = lampImage.mean(axis=2)
 
-	img = img - lampImage
-
-	NormImage = plt.imread(base_path + "laser.bmp")
+	NormImage = plt.imread(path_base + "laser.bmp")
 	if NormImage.ndim == 3:
 		NormImage = NormImage.mean(axis=2)
 
+	img = img - lampImage
 	img = np.divide(img, NormImage, out=np.ones_like(img), where=NormImage != 0)
+	img = 1 - img
 
-	#img = NormImage
-
-	#img = img / (exposure * 255) #gives unscaled intensity values to each pixel
-
-	plt.imshow(img)
+	plt.imshow(img, cmap='inferno', vmin=0, vmax=1)
+	plt.colorbar()
 	plt.show()
 
 	sf = 1
@@ -196,9 +191,11 @@ for d, info in beam_images.items():
 	img, polar_img, x_prof, y_prof, P, centre, \
 		polar_extent, polar_xlabel, polar_ylabel, \
 		profile_label, I_max, I_ave_profile, I_ave_peak, scale_factor = process_image(
-		centre=info.get("centre"),
-		exposure = info.get("exposure") or default_exposure, input_scale_factor=k_mean_global
-	)
+			centre=info.get("centre"),
+			exposure=info.get("exposure"),
+			input_scale_factor=k_mean_global,
+			path_override=info.get("path")
+		)
 
 	results[d] = {
 		"img": img,
@@ -213,22 +210,25 @@ for d, info in beam_images.items():
 		"polar_ylabel": polar_ylabel,
 		"profile_label": profile_label,
 		"I_max": I_max,
-		"I_Ave_profile" : I_ave_profile,
+		"I_Ave_profile": I_ave_profile,
 		"I_Ave_max": I_ave_peak,
 	}
 
-data = results[d]
-img = data["img"]
-polar_img = data["polar_img"]
-cx, cy = data["centre"]
-x_prof, y_prof = data["x_prof"], data["y_prof"]
-polar_extent = data["polar_extent"]
-polar_xlabel = data["polar_xlabel"]
-polar_ylabel = data["polar_ylabel"]
-profile_label = data["profile_label"]
-I_max = data["I_max"]
-I_ave_peak = data["I_Ave_max"]
 
-plt.plot(x_prof * 1e3,1-y_prof)
-plt.axvline(cutoff*pixel_size*1e3)
-plt.show()
+for d in results:
+
+	data = results[d]
+	img = data["img"]
+	polar_img = data["polar_img"]
+	cx, cy = data["centre"]
+	x_prof, y_prof = data["x_prof"], data["y_prof"]
+	polar_extent = data["polar_extent"]
+	polar_xlabel = data["polar_xlabel"]
+	polar_ylabel = data["polar_ylabel"]
+	profile_label = data["profile_label"]
+	I_max = data["I_max"]
+	I_ave_peak = data["I_Ave_max"]
+
+	plt.plot(x_prof * 1e3,y_prof)
+	plt.axvline(cutoff*pixel_size*1e3)
+	plt.show()
