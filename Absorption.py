@@ -62,7 +62,7 @@ p_total_error = 0.05e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
 
 beam_images = {	
-	4000: {"centre": (718, 556), "exposure": 6.107e-3, "path":"Voltage_Spec_2/"},
+	#4000: {"centre": (718, 556), "exposure": 6.107e-3, "path":"Voltage_Spec_2/"},
 	4001: {"centre": (740, 543), "exposure": 8.488e-3, "path":"Spec_Voltage_Norm_Images/"},
 }
 
@@ -115,7 +115,10 @@ def process_image(centre=None, exposure=None, input_scale_factor=None, path_over
 	img = 1 - img
 
 	plt.imshow(img, cmap='inferno', vmin=0, vmax=1)
-	plt.colorbar()
+	plt.colorbar(label=r"Absorption")
+	plt.xlabel("x pixels")
+	plt.ylabel("y pixels")
+	plt.savefig("Absorption1")
 	plt.show()
 
 	sf = 1
@@ -147,11 +150,40 @@ def process_image(centre=None, exposure=None, input_scale_factor=None, path_over
 	y_p = r_grid * np.sin(theta_grid) + cy
 	polar_img = map_coordinates(img, [y_p, x_p], order=1)
 
-	#plt.imshow(polar_img, aspect="auto", cmap="CMRmap", origin="lower")
-	plt.imshow(polar_img, aspect="auto", cmap='inferno', origin="lower", vmin=0, vmax=1)
-	plt.colorbar()
-	plt.axhline(cutoff)
+	pixel_size_mm = pixel_size * 1e3
+
+	plt.imshow(
+		polar_img,
+		aspect="auto",
+		cmap='inferno',
+		origin="lower",
+		vmin=0, vmax=1,
+		extent=[theta.min(), theta.max(), r.min()*pixel_size_mm, r.max()*pixel_size_mm]
+	)
+	plt.colorbar(label=r"Absorption")
+	plt.axhline(cutoff * pixel_size_mm, color="white", linewidth=1)
+
+	# -------------------------
+	# X-axis ticks: -π to π
+	# -------------------------
+	xticks = [-np.pi, -np.pi/2, 0, np.pi/2, np.pi]
+	xtick_labels = [r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"]
+	plt.xticks(xticks, xtick_labels)
+
+	# -------------------------
+	# Y-axis ticks: in mm
+	# r is in pixels → multiply by 3.45 µm = 0.00345 mm
+	# Choose nice tick positions automatically or define manually
+	# -------------------------
+	max_r_mm = r.max() * pixel_size_mm
+	yticks_mm = np.linspace(0, max_r_mm, 6)   # 6 nice ticks
+	plt.yticks(yticks_mm)
+
+	plt.xlabel("θ (radians)")
+	plt.ylabel("r (mm)")
+	plt.savefig("Absorption2")
 	plt.show()
+
 
 	# integration
 	P_r_unnorm = np.trapezoid(polar_img, theta, axis=1)#gives the power per unit radial length
@@ -236,5 +268,9 @@ for d in results:
 
 	plt.xlabel("r (mm)")
 	plt.ylabel("Absorption")
+
+	plt.ylim(0, 1)
+
+	plt.savefig("Absorption3")
 
 	plt.show()

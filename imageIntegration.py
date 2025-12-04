@@ -1303,9 +1303,9 @@ else:
 	plt.xlabel("Voltage (mV)")
 	#plt.ylabel("Integrated power (W)")
 	plt.ylabel("Transmission")
-	plt.ylim(0.4,1.1)
+	#plt.ylim(0.4,1.1)
 	plt.axhline(1, color='grey', lw=1)
-	plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
+	plt.yticks([ 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 	#plt.title("Integrated, Scaled Power vs. Applied Voltage")
 
 ax = plt.gca()
