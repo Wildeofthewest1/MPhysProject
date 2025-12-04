@@ -147,7 +147,9 @@ def process_image(centre=None, exposure=None, input_scale_factor=None, path_over
 	y_p = r_grid * np.sin(theta_grid) + cy
 	polar_img = map_coordinates(img, [y_p, x_p], order=1)
 
-	plt.imshow(polar_img, aspect="auto", cmap="CMRmap", origin="lower")
+	#plt.imshow(polar_img, aspect="auto", cmap="CMRmap", origin="lower")
+	plt.imshow(polar_img, aspect="auto", cmap='inferno', origin="lower", vmin=0, vmax=1)
+	plt.colorbar()
 	plt.axhline(cutoff)
 	plt.show()
 
@@ -231,4 +233,8 @@ for d in results:
 
 	plt.plot(x_prof * 1e3,y_prof)
 	plt.axvline(cutoff*pixel_size*1e3)
+
+	plt.xlabel("r (mm)")
+	plt.ylabel("Absorption")
+
 	plt.show()
