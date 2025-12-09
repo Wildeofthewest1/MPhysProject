@@ -87,6 +87,7 @@ print("Now running in:", os.getcwd())
 import glob
 
 folder = "SilverSpecFirst/"
+folder = "SilverSpecSecond/"
 
 base_path = "Photodiode_Data/" + folder
 
@@ -142,8 +143,6 @@ averages2_errs  = np.array([e for (m, e) in averages2])
 background1_mean, background1_err = background1
 background2_mean, background2_err = background2
 
-
-
 # ----------------------------------------------------
 # Convert to arrays and subtract background
 # ----------------------------------------------------
@@ -161,13 +160,13 @@ y2_err = np.sqrt(averages2_errs**2 + background2_err**2)
 # ----------------------------------------------------
 # Remove region for fitting
 # ----------------------------------------------------
-exclude = (xs > 2.0) & (xs < 3.5)
+exclude = (xs1 > 2.0) & (xs1 < 3.5)
 mask = ~exclude
 
 # Linear fit to CH1
-coeffs1 = np.polyfit(xs[mask], y1[mask], 1)
+coeffs1 = np.polyfit(xs1[mask], y1[mask], 1)
 m1, c1 = coeffs1
-fit_line1 = np.polyval(coeffs1, xs)
+fit_line1 = np.polyval(coeffs1, xs1)
 
 # ----------------------------------------------------
 # Plot original + fit

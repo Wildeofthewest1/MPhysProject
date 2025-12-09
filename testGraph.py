@@ -58,7 +58,7 @@ Gamma_nat = natural_linewidth   # natural linewidth [rad/s]
 
 mass_Ag = 107.8682 * amu #Standard atomic weight for silver from NIST
 
-abundance107 = 1#0.51839 #NIST Ag107 abundace
+abundance107 = 0.51839 #NIST Ag107 abundace
 
 ratio1 = natural_linewidth / Rb_nat
 
@@ -161,7 +161,7 @@ def transmission(T_C=Temp, detuning_GHz=10, show_components=True):
     scale = 0.69
 
     # Convert absorption profiles into transmission dips
-    T_total = np.exp(-alpha_total / np.max(alpha_total) * scale)
+    T_total = np.exp(-alpha_total / np.max(alpha_total) * scale * 0.2 * 8)
 
     component_transmissions = []
     for det, prof, label in components:
@@ -214,7 +214,7 @@ plt.ylabel("Transmission")
 plt.xlabel("Linear Detuning (GHz)")
 
 ## Labels (Adding labels to go with the transition level diagram)
-
+"""
 adjust = 0.17
 
 plt.text(x=-8, y=1.09, s="Ag-D$_2$", fontsize=fontsz+2, ha = "left", va = "center") ##Ag-D2
@@ -236,7 +236,7 @@ plt.text(x=5.5+adjust, y=0.49, s="2", fontsize=fontsz, ha = "left", va = "center
 
 plt.text(x=6.5+adjust, y=0.12, s="$F$", fontsize=fontsz, ha = "left", va = "center")#F
 plt.text(x=6.5+adjust, y=0.44, s="$F^'$", fontsize=fontsz, ha = "left", va = "center")#F'
-
+"""
 ##
 
 plt.ylim([0, 1.2])
@@ -246,11 +246,11 @@ plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
 plt.xticks([-8, -4, 0, 4, 8])
 
 # --- Overlay the image ---
-img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
+#img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
 
 # Add image to the plot using figimage or imshow
 # Place image in axis coordinates (0-1)
-plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
+#plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
 
 #plt.savefig(r"C:\Users\Matt\Desktop\Lvl_4\Project\voigt_combined_V3.pdf", dpi=600, bbox_inches='tight')
 
