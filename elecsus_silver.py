@@ -33,7 +33,7 @@ E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,E
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
 Temp = 25
-AgNumberDensity = 2.5e15
+AgNumberDensity = 5e15
 Dline = 'D2'
 lcell = 75e-3
 Bfield = 0
@@ -188,12 +188,13 @@ if ShowTransPlot:
 	img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
 	plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
 
-plt.ylim([0.4, 1.1])
+plt.ylim([0, 1.1])
 plt.xlim([-8.5,8.5])
 
 #plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
-plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
-plt.xticks([-8,-6, -4,-2, 0, 2, 4, 6, 8])
+#plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
+plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+plt.xticks([ -8, -6, -4, -2, 0, 2, 4, 6, 8])
 
 plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voigt_adjusted.png", dpi=600, bbox_inches='tight')
 
