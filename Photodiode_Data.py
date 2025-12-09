@@ -87,7 +87,7 @@ print("Now running in:", os.getcwd())
 import glob
 
 folder = "SilverSpecFirst/"
-folder = "SilverSpecSecond/"
+#folder = "SilverSpecSecond/"
 
 base_path = "Photodiode_Data/" + folder
 
@@ -190,7 +190,7 @@ transmission_err = np.abs(transmission) * np.sqrt(
     (y2_err / y2)**2
 )
 
-plt.errorbar(xs1, transmission/np.max(transmission),
+plt.errorbar(xs, transmission/np.max(transmission),
              yerr=np.abs(transmission_err/np.max(transmission)),
              marker='o')
 
@@ -199,6 +199,8 @@ plt.ylabel("Transmission")
 
 plt.ylim(0,1.1)
 plt.yticks([0.0,0.1,0.2,0.3,0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
+
+plt.tight_layout()
 
 plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
 plt.show()
