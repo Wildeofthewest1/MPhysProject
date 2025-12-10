@@ -18,7 +18,15 @@ rcParams['ytick.major.size'] = 4
 rcParams['xtick.minor.size'] = 2
 rcParams['ytick.minor.size'] = 2
 
-c = 3e8
+# ----------------------------------------------------
+# Configuration
+# ----------------------------------------------------
+os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+print("Now running in:", os.getcwd())
+
+c = 2.99792458e8
+
+"""
 
 frequencies = (456777.182,
 			   456777.031,
@@ -52,6 +60,74 @@ frequencies = (456777.182,
 			   456771.464,
 			   456771.252)
 
+frequencies2 = (456775.401,
+				456775.362,
+				456775.318,
+				456775.272,
+				456775.223,
+				456775.169,
+				456775.115,
+				456775.058,
+				456775.006,
+				456774.944,
+				456774.884,
+				456774.829,
+				456774.773,
+				456774.710,
+				456774.652,
+				456774.592,
+				456774.534,
+				456774.468,
+				456774.399,
+				456774.341,
+				456774.286,
+				456774.228,
+				456774.152,
+				456774.101,
+				456774.044,
+				456773.982,
+				456773.921,
+				456773.867,
+				456773.809,
+				456773.750,
+				456773.692,
+				456773.632,
+				456773.565,
+				456773.506,
+				456773.442,
+				456773.384,
+				456773.317,
+				456773.253,
+				456773.191,
+				456773.128,
+				456773.064,
+				456773.007,
+				456772.947,
+				456772.886,
+				456772.810,
+				456772.754,
+				456772.686,
+				456772.623,
+				456772.559,
+				456772.504,
+				456772.446)
+
+import pandas as pd
+
+df = pd.DataFrame({
+    "freq1": frequencies,
+})
+
+df.to_csv("frequencies1.csv", index=False)
+
+df = pd.DataFrame({
+    "freq2": frequencies2
+})
+
+df.to_csv("frequencies2.csv", index=False)
+
+"""
+
 # ----------------------------------------------------
 # Helper: Load Tektronix CSV (TIME, CH1, CH2)
 # ----------------------------------------------------
@@ -77,24 +153,21 @@ def load_tektronix_csv(filename):
 
 	return t, ch1, ch2
 
-
-# ----------------------------------------------------
-# Configuration
-# ----------------------------------------------------
-os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
-print("Now running in:", os.getcwd())
-
 import glob
 
-folder = "SilverSpecFirst/"
-#folder = "SilverSpecSecond/"
+first = True
+
+if first:
+	folder = "SilverSpecFirst/"
+else:
+	folder = "SilverSpecSecond/"
 
 base_path = "Photodiode_Data/" + folder
 
 files = sorted(glob.glob(base_path + "tek*ALL.csv"))
 
 print("Found files:", len(files))
-print(files)
+#print(files)
 
 power = 1.2e-6  # 1.2 µW in W
 
@@ -146,8 +219,17 @@ background2_mean, background2_err = background2
 # ----------------------------------------------------
 # Convert to arrays and subtract background
 # ----------------------------------------------------
+
+import pandas as pd
+frequencies = pd.read_csv("frequencies1.csv")
+frequencies2 = pd.read_csv("frequencies2.csv")
+
 xs1 = np.linspace(1, 4, len(files)-1)
-xs = -np.array(frequencies)*2 + (c / (328.1625)) - 633
+
+if first:
+	xs = -np.array(frequencies)*2 + (c / (328.1625))# - 633
+else:
+	xs = -np.array(frequencies2)*2 + (c / (328.1625))# - 633
 
 y1 = np.abs(np.abs(averages1_means) - np.abs(background1_mean))
 y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -177,7 +259,11 @@ plt.errorbar(xs1, y2, yerr = y2_err, marker="o", label="CH2 data")
 plt.legend()
 plt.xlabel("Voltage (GHz)")
 plt.ylabel("Signal")
-plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
+
+if first:
+	plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
+else:
+	plt.savefig("Photodiode_Plot2", dpi=300, bbox_inches='tight')
 plt.show()
 
 # ----------------------------------------------------
@@ -189,6 +275,22 @@ transmission_err = np.abs(transmission) * np.sqrt(
     (y1_err / y1)**2 +
     (y2_err / y2)**2
 )
+
+######## save to csv
+
+if first:
+	df = pd.DataFrame({
+		"Transmission1": transmission,
+		"Transmission1err": transmission_err,
+	})
+	df.to_csv("transmission1.csv", index=False)
+else:
+	df = pd.DataFrame({
+		"Transmission2": transmission,
+		"Transmission2err": transmission_err,
+	})
+	df.to_csv("transmission2.csv", index=False)
+######## save to csv
 
 plt.errorbar(xs, transmission/np.max(transmission),
              yerr=np.abs(transmission_err/np.max(transmission)),
@@ -202,5 +304,9 @@ plt.yticks([0.0,0.1,0.2,0.3,0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
 
 plt.tight_layout()
 
-plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
+if first:
+
+	plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
+else:
+	plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
 plt.show()

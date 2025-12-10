@@ -196,6 +196,18 @@ plt.xlim([-8.5,8.5])
 plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 plt.xticks([ -8, -6, -4, -2, 0, 2, 4, 6, 8])
 
+##########################################
+#Add data to figure
+##########################################
+
+import pandas as pd
+frequencies = pd.read_csv("frequencies1.csv")
+frequencies2 = pd.read_csv("frequencies2.csv")
+transmissions1 = pd.read_csv("frequencies2.csv")
+
+
+
+
 plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voigt_adjusted.png", dpi=600, bbox_inches='tight')
 
 #plt.legend()
