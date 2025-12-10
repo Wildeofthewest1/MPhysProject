@@ -32,8 +32,10 @@ Detuning=np.linspace(-10,10,2000)*1e3 #Detuning range between -10 and 10 GHz. Ne
 E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,Ez]
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
-Temp = 25
+Temp =90#30#25
 AgNumberDensity = 5e15
+AgCustomGroundPopulation = True
+
 Dline = 'D2'
 lcell = 75e-3
 Bfield = 0
@@ -67,9 +69,22 @@ else:
 	else:
 		Temp = 11
 
-p_dict={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 1}#, 'Ag107frac':100}
-p_dict2={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 2}
-p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 0}
+if AgCustomGroundPopulation:
+	a = 0.44
+	b = (1-a)/3
+	custpop = [a, b, b, b]
+else:
+	custpop = None
+
+first = True
+first = False
+
+Zoom = True
+Zoom = False
+
+p_dict={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 1, 'CustomPop': custpop}#, 'Ag107frac':100}
+p_dict2={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 2, 'CustomPop': custpop}
+p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 0, 'CustomPop': custpop}
 
 #A 75 mm cell of natural abundance Rb at 20C. No bfield and hence no angle Btheta between the k-vector and the mag field. 
 [S0,S1,S2,S3,E_out,Ix,Iy]=mf.get_spectra(Detuning,E_in,p_dict,outputs=['S0','S1','S2','S3','E_out','Ix','Iy'])
@@ -188,14 +203,6 @@ if ShowTransPlot:
 	img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
 	plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
 
-plt.ylim([0, 1.1])
-plt.xlim([-8.5,8.5])
-
-#plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
-#plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
-plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-plt.xticks([ -8, -6, -4, -2, 0, 2, 4, 6, 8])
-
 ##########################################
 #Add data to figure
 ##########################################
@@ -203,12 +210,45 @@ plt.xticks([ -8, -6, -4, -2, 0, 2, 4, 6, 8])
 import pandas as pd
 frequencies = pd.read_csv("frequencies1.csv")
 frequencies2 = pd.read_csv("frequencies2.csv")
-transmissions1 = pd.read_csv("frequencies2.csv")
+transmissions1 = pd.read_csv("transmission1.csv")
+transmissions2 = pd.read_csv("transmission2.csv")
+c = 2.99792458e8
+lambd = 328.1629601#(22)
+
+if first:
+	freq = np.array(frequencies["freq1"])
+	trans = np.array(transmissions1["Transmission1"])
+	transerr = np.array(transmissions1["Transmission1err"])
+	adj = 0.011
+else:
+	freq = np.array(frequencies2["freq2"])
+	trans = np.array(transmissions2["Transmission2"])
+	transerr = np.array(transmissions2["Transmission2err"])
+	adj = 0
+
+freq = -np.array(freq)*2 + (c / (lambd)) + 1.09
+
+#print(freq, trans, transerr)
+
+plt.errorbar(freq, trans/(np.max(trans)-adj),
+             yerr=np.abs(transerr/(np.max(trans)-adj)),
+             marker='o',label = "data")
+
+if Zoom:
+	plt.ylim([0.2, 1.1])
+	plt.xlim([-2.5,3])
+else:
+	plt.ylim([0, 1.1])
+	plt.xlim([-8.5,8.5])
 
 
 
+#plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
+#plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
+#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+#plt.xticks([ -8, -6, -4, -2, 0, 2, 4, 6, 8])
 
-plt.savefig(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Project\voigt_adjusted.png", dpi=600, bbox_inches='tight')
+plt.savefig(r"TheoryExperiment1.png", dpi=600, bbox_inches='tight')
 
 #plt.legend()
 

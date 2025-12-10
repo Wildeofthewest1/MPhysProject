@@ -28,27 +28,32 @@ p_dict_defaults = {	'Elem':'Rb', 'Dline':'D2',
 							'Btheta':0, 'Bphi':0,
 							'Constrain':True, 'DoppTemp':20.,
 							'Rb85frac':72.17, 'K40frac':0.01, 'K41frac':6.73,'Ag107frac':51.839,
-							'BoltzmannFactor':True, 'AgNumden': 3e15, 'Isotope_Combination': 0}
+							'BoltzmannFactor':True, 'AgNumden': 3e15, 'Isotope_Combination': 0,
+							'CustomPop' : None}
 
 def FreqStren(groundLevels, excitedLevels, groundDim, excitedDim,
-              Dline, hand, BoltzmannFactor=True, T=293.16, tol_MHz=1.0):
-    """ 
+              Dline, hand, BoltzmannFactor=True, T=293.16, tol_MHz=1.0,
+              custom_pop=None):
+    """
     Calculate transition frequencies and strengths by taking dot
-    products of relevant parts of the ground / excited state eigenvectors.
-    Then sum transitions whose ΔE differ by less than `tol_MHz`.
+    products between the relevant ground / excited eigenvectors.
     """
 
     transitionFrequency = []
     transitionStrength = []
 
-    ## Boltzmann factor
-    if BoltzmannFactor:
-        groundEnergies = np.array(groundLevels)[:, 0].real
-        lowestEnergy = np.min(groundEnergies)
-        BoltzDist = np.exp(-(groundEnergies - lowestEnergy) * h * 1e6 / (kB * T))
+    # --- Population model ---
+    if custom_pop is not None:
+        BoltzDist = np.array(custom_pop, dtype=float)
         BoltzDist /= BoltzDist.sum()
     else:
-        BoltzDist = np.ones(groundDim) / groundDim
+        if BoltzmannFactor:
+            groundEnergies = np.array(groundLevels)[:, 0].real
+            lowestEnergy = np.min(groundEnergies)
+            BoltzDist = np.exp(-(groundEnergies - lowestEnergy) * h * 1e6 / (kB * T))
+            BoltzDist /= BoltzDist.sum()
+        else:
+            BoltzDist = np.ones(groundDim) / groundDim
 
     # Select correct columns (polarisation)
     if hand == 'Right':
@@ -232,6 +237,13 @@ def calc_chi(X, p_dict,verbose=False):
 			Any additional keys in the dict are ignored.
 	"""
 	
+
+	if 'CustomPop' in list(p_dict.keys()):
+		CustomPop = p_dict['CustomPop']
+	else:
+		CustomPop = p_dict_defaults['CustomPop']
+
+
 	# get parameters from dictionary
 	if 'Elem' in list(p_dict.keys()):
 		Elem = p_dict['Elem']
@@ -289,7 +301,8 @@ def calc_chi(X, p_dict,verbose=False):
 		Isotope_Combination =  p_dict['Isotope_Combination']
 	else:
 		Isotope_Combination =  p_dict_defaults['Isotope_Combination']
-	
+
+
 	
 	if verbose: print(('Temperature: ', T, '\tBfield: ', Bfield))
 	# convert X to array if needed (does nothing otherwise)
@@ -504,19 +517,22 @@ def calc_chi(X, p_dict,verbose=False):
 				Ag107_ES.groundManifold,
 				Ag107_ES.excitedManifold,
 				Ag107_ES.ds, Ag107_ES.dp, Dline,
-				'Left', BoltzmannFactor, T + 273.16
+				'Left', BoltzmannFactor, T + 273.16,
+				custom_pop=CustomPop
 			)
 			renergy107, rstrength107, rtransno107 = FreqStren(
 				Ag107_ES.groundManifold,
 				Ag107_ES.excitedManifold,
 				Ag107_ES.ds, Ag107_ES.dp, Dline,
-				'Right', BoltzmannFactor, T + 273.16
+				'Right', BoltzmannFactor, T + 273.16,
+				custom_pop=CustomPop
 			)
 			zenergy107, zstrength107, ztransno107 = FreqStren(
 				Ag107_ES.groundManifold,
 				Ag107_ES.excitedManifold,
 				Ag107_ES.ds, Ag107_ES.dp, Dline,
-				'Z', BoltzmannFactor, T + 273.16
+				'Z', BoltzmannFactor, T + 273.16,
+				custom_pop=CustomPop
 			)
 		if Ag109frac != 0.0:
 			Ag109atom = ac.Ag109
@@ -526,19 +542,22 @@ def calc_chi(X, p_dict,verbose=False):
 				Ag109_ES.groundManifold,
 				Ag109_ES.excitedManifold,
 				Ag109_ES.ds, Ag109_ES.dp, Dline,
-				'Left', BoltzmannFactor, T + 273.16
+				'Left', BoltzmannFactor, T + 273.16,
+				custom_pop=CustomPop
 			)
 			renergy109, rstrength109, rtransno109 = FreqStren(
 				Ag109_ES.groundManifold,
 				Ag109_ES.excitedManifold,
 				Ag109_ES.ds, Ag109_ES.dp, Dline,
-				'Right', BoltzmannFactor, T + 273.16
+				'Right', BoltzmannFactor, T + 273.16,
+				custom_pop=CustomPop
 			)
 			zenergy109, zstrength109, ztransno109 = FreqStren(
 				Ag109_ES.groundManifold,
 				Ag109_ES.excitedManifold,
 				Ag109_ES.ds, Ag109_ES.dp, Dline,
-				'Z', BoltzmannFactor, T + 273.16
+				'Z', BoltzmannFactor, T + 273.16,
+				custom_pop=CustomPop
 			)
 		# Choose transition constants for the selected D-line
 		if Dline == 'D2':

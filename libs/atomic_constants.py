@@ -231,19 +231,21 @@ class Rb87_D2:
     Bp = 12.4965
     IsotopeShift = -56.361 #MHz
 
+
 class Ag107_D2:
     """Constants relating to silver-107 and the D2 transition"""
     #Hyperfine constants in units of MHz
     Ap = 31.7
     Bp = 0
-    IsotopeShift = -229.24 #MHz
+    IsotopeShift = 229.24 #MHz
 
 class Ag109_D2:
     """Constants relating to silver-109 and the D2 transition"""
     #Hyperfine constants in units of MHz
     Ap = 36.7
     Bp = 0
-    IsotopeShift = 246.76 #MHz
+    IsotopeShift = -246.76 #MHz
+
 
 class Cs_D1:
     """Constants relating to the caesium-133 atom and the D1 transition"""

@@ -155,7 +155,7 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = True
+first = False
 
 if first:
 	folder = "SilverSpecFirst/"
@@ -234,8 +234,16 @@ else:
 y1 = np.abs(np.abs(averages1_means) - np.abs(background1_mean))
 y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
 
-y1_err = np.sqrt(averages1_errs**2 + background1_err**2)
-y2_err = np.sqrt(averages2_errs**2 + background2_err**2)
+y1_err = np.sqrt(averages1_errs**2 + background1_err**2)# + )
+y2_err = np.sqrt(averages2_errs**2 + background2_err**2)# + )
+
+# --------------------------------------------------------
+# Add % uncertainty due to beam power fluctuations
+# --------------------------------------------------------
+power_frac = 0.05   # 10 percent
+
+y1_err = np.sqrt(y1_err**2 + (power_frac * y1)**2)
+y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)
 
 #print(y1,y2)
 
@@ -276,6 +284,8 @@ transmission_err = np.abs(transmission) * np.sqrt(
     (y2_err / y2)**2
 )
 
+
+
 ######## save to csv
 
 if first:
@@ -309,4 +319,9 @@ if first:
 	plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
 else:
 	plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
+
+
+plt.ylim([0, 1.1])
+plt.xlim([-8.5,8.5])
+
 plt.show()
