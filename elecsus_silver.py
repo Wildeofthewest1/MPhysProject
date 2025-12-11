@@ -242,13 +242,12 @@ else:
 	plt.xlim([-8.5,8.5])
 
 
-
 #plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
 #plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
 #plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 #plt.xticks([ -8, -6, -4, -2, 0, 2, 4, 6, 8])
 
-plt.savefig(r"TheoryExperiment1.png", dpi=600, bbox_inches='tight')
+#plt.savefig(r"TheoryExperiment1.png", dpi=600, bbox_inches='tight')
 
 #plt.legend()
 
@@ -264,3 +263,119 @@ plt.show()
 #plt.savefig(newname, dpi=300, bbox_inches='tight')
 
 #plt.show()
+
+###############################################
+# THEORETICAL CURVE (already computed above)
+###############################################
+
+theory_curve = S0_2[0].real  # theoretical total transmission
+theory_detuning = Detuning / 1e3   # in GHz
+
+###############################################
+# EXPERIMENTAL DATA PROCESSING
+###############################################
+
+exp_detuning = freq
+exp_transmission = trans / (np.max(trans) - adj)
+exp_error = np.abs(transerr / (np.max(trans) - adj))
+
+###############################################
+# INTERPOLATE THEORY ONTO EXPERIMENTAL POINTS
+###############################################
+
+# Ensure frequencies match
+theory_interp = np.interp(exp_detuning, theory_detuning, theory_curve)
+
+###############################################
+# COMPUTE NORMALISED RESIDUALS
+###############################################
+
+residuals = (exp_transmission - theory_interp) / exp_error
+
+###############################################
+# 2-SUBPLOT FIGURE
+###############################################
+
+fig, (ax_main, ax_res) = plt.subplots(
+    2, 1,
+    figsize=(8, 6),
+    sharex=True,
+    gridspec_kw={"height_ratios": [3, 1]}
+)
+
+###########################################################
+# MAIN TRANSMISSION PLOT
+###########################################################
+# Plot theoretical curves
+colours = ['deepskyblue', 'firebrick', 'purple', 'darkkhaki', 'orange', 'pink']
+
+for i in range(len(S0)-1):
+    if len(S0) >= 7:
+        color = colours[1] if i <= 2 else colours[0]
+    else:
+        color = colours[1] if i <= 1 else colours[0]
+
+    ax_main.plot(theory_detuning, S0[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+
+# Isotopes
+for i in range(len(S0_1)-1):
+    if len(S0_1) >= 7:
+        color = colours[3] if i <= 2 else colours[2]
+    else:
+        color = colours[3] if i <= 1 else colours[2]
+
+    ax_main.plot(theory_detuning, S0_1[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+
+# Total theoretical transmission
+ax_main.plot(theory_detuning, theory_curve, color="grey", linewidth=1.5, label="Theory (Total)")
+ax_main.fill_between(theory_detuning, theory_curve, 1, color="lightgrey", alpha=0.5)
+
+# Experimental data
+ax_main.errorbar(
+    exp_detuning,
+    exp_transmission,
+    yerr=exp_error,
+    fmt='x',
+    color='black',
+    label='Experiment',
+	capsize = 2
+)
+
+ax_main.axhline(1, color='grey', lw=1)
+
+ax_main.text(x=3.05, y=0.4-0.05, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "right", va = "center") ##Ag-D2
+ax_main.text(x=3.9, y=0.4-0.05, s="@{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
+ax_main.text(x=3.9, y=0.32-0.05, s="$N_D$ = "+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "right", va = "center") ##Temperature
+
+ax_main.set_ylabel("Transmission")
+ax_main.set_ylim([0.2, 1.1])
+ax_main.set_xlim([-2.5, 4])
+
+###########################################################
+# RESIDUAL SUBPLOT
+###########################################################
+
+ax_res.axhline(0, color='grey', linewidth=1)
+ax_res.errorbar(
+    exp_detuning,
+    residuals,
+    yerr=np.ones_like(residuals),
+    fmt='x',
+    color='black',
+    markersize=4,
+	capsize = 2
+)
+
+ax_res.set_ylabel("Residuals\n(normalised)")
+ax_res.set_xlabel("Linear Detuning (GHz)")
+
+ax_res.set_ylim([-3, 3])  # Adjust as needed
+
+###########################################################
+# SAVE & SHOW
+###########################################################
+
+plt.subplots_adjust(hspace=0.05)
+
+#plt.savefig("TheoryExperiment_WithResiduals.png", dpi=600, bbox_inches='tight')
+plt.show()
