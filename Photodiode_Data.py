@@ -155,12 +155,14 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = False
+first = 1
 
-if first:
+if first == 0:
 	folder = "SilverSpecFirst/"
-else:
+elif first == 1:
 	folder = "SilverSpecSecond/"
+else:
+	folder = "VoltageTime/"
 
 base_path = "Photodiode_Data/" + folder
 
@@ -181,6 +183,7 @@ background2 = 0.0
 # ----------------------------------------------------
 for i in range(0, len(files)):
 
+	print(i)
 	#print("Loading index:", i)
 
 	path = "ALL" + str(i).zfill(4) + "/A" + str(i).zfill(4) + "/"
@@ -225,11 +228,16 @@ frequencies = pd.read_csv("frequencies1.csv")
 frequencies2 = pd.read_csv("frequencies2.csv")
 
 xs1 = np.linspace(1, 4, len(files)-1)
+xs2 = np.linspace(0, len(files)-2, len(files)-1)
 
-if first:
+print(xs2)
+
+if first == 0:
 	xs = -np.array(frequencies)*2 + (c / (328.1625))# - 633
-else:
+elif first == 1:
 	xs = -np.array(frequencies2)*2 + (c / (328.1625))# - 633
+else:
+	xs = xs2
 
 y1 = np.abs(np.abs(averages1_means) - np.abs(background1_mean))
 y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -237,10 +245,14 @@ y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
 y1_err = np.sqrt(averages1_errs**2 + background1_err**2)# + )
 y2_err = np.sqrt(averages2_errs**2 + background2_err**2)# + )
 
+angle_unc = 0.165/100
+
+y2_err = np.sqrt(y2_err**2 + (angle_unc * y2)**2)
+
 # --------------------------------------------------------
 # Add % uncertainty due to beam power fluctuations
 # --------------------------------------------------------
-power_frac = 0.05   # 10 percent
+power_frac = 0.05   # 5 percent
 
 y1_err = np.sqrt(y1_err**2 + (power_frac * y1)**2)
 y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)
@@ -261,16 +273,24 @@ fit_line1 = np.polyval(coeffs1, xs1)
 # ----------------------------------------------------
 # Plot original + fit
 # ----------------------------------------------------
-plt.plot(xs1, fit_line1, '--', label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}")
-plt.errorbar(xs1, y1, yerr = y1_err, marker="o", label="CH1 data")
-plt.errorbar(xs1, y2, yerr = y2_err, marker="o", label="CH2 data")
-plt.legend()
-plt.xlabel("Voltage (GHz)")
-plt.ylabel("Signal")
 
-if first:
-	plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
+print(y1)
+
+if first == 2:
+	plt.errorbar(xs2, y1, yerr = y1_err, marker="o", label="CH1 data")
+	plt.xlabel("Time (Mins)")
+	plt.ylabel("CH1 Signal (V)")
 else:
+	plt.plot(xs1, fit_line1, '--', label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}")
+	plt.errorbar(xs1, y1, yerr = y1_err, marker="o", label="CH1 data")
+	plt.errorbar(xs1, y2, yerr = y2_err, marker="o", label="CH2 data")
+	plt.legend()
+	plt.xlabel("Voltage (GHz)")
+	plt.ylabel("Signal (V)")
+
+if first == 0:
+	plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
+elif first == 1:
 	plt.savefig("Photodiode_Plot2", dpi=300, bbox_inches='tight')
 plt.show()
 
@@ -284,17 +304,15 @@ transmission_err = np.abs(transmission) * np.sqrt(
     (y2_err / y2)**2
 )
 
-
-
 ######## save to csv
 
-if first:
+if first == 0:
 	df = pd.DataFrame({
 		"Transmission1": transmission,
 		"Transmission1err": transmission_err,
 	})
 	df.to_csv("transmission1.csv", index=False)
-else:
+elif first == 1:
 	df = pd.DataFrame({
 		"Transmission2": transmission,
 		"Transmission2err": transmission_err,
@@ -302,26 +320,36 @@ else:
 	df.to_csv("transmission2.csv", index=False)
 ######## save to csv
 
-plt.errorbar(xs, transmission/np.max(transmission),
-             yerr=np.abs(transmission_err/np.max(transmission)),
-             marker='o')
+if first <2:
+	print(np.max(transmission))
+	plt.errorbar(xs, transmission/np.max(transmission),
+				yerr=np.abs(transmission_err/np.max(transmission)),
+				marker='o')
+	
+	plt.ylim(0,1.1)
+	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+	plt.xlabel("Detuning (GHz)")
+	plt.ylabel("Transmission")
 
-plt.xlabel("Detuning (GHz)")
-plt.ylabel("Transmission")
-
-plt.ylim(0,1.1)
-plt.yticks([0.0,0.1,0.2,0.3,0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
+else:
+	plt.errorbar(xs, transmission/0.3301348605312241,
+				yerr=np.abs(transmission_err/0.3301348605312241),
+				marker='o')
+	plt.ylim(0,1.1)
+	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+	plt.xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18])
+	plt.xlabel("Time (Minutes)")
+	plt.ylabel("Transmission")
 
 plt.tight_layout()
 
-if first:
-
+if first == 0:
 	plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
-else:
+elif first == 1:
 	plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
 
-
-plt.ylim([0, 1.1])
-plt.xlim([-8.5,8.5])
+if first < 2:
+	plt.ylim([0, 1.1])
+	plt.xlim([-8.5,8.5])
 
 plt.show()

@@ -215,6 +215,7 @@ transmissions2 = pd.read_csv("transmission2.csv")
 c = 2.99792458e8
 lambd = 328.1629601#(22)
 
+
 if first:
 	freq = np.array(frequencies["freq1"])
 	trans = np.array(transmissions1["Transmission1"])
@@ -226,12 +227,27 @@ else:
 	transerr = np.array(transmissions2["Transmission2err"])
 	adj = 0
 
+freqerr = 0.01 #0.01GHz
+lambderr = 0.0000022
+
 freq = -np.array(freq)*2 + (c / (lambd)) + 1.09
+
+df_dx = -2
+df_dl = -c / (lambd**2)
+
+freq_total_err = np.sqrt(
+    (df_dx * freqerr)**2 +
+    (df_dl * lambderr)**2
+)
+
+# Make an array matching freq
+freqerr_array = np.full_like(freq, freq_total_err)
 
 #print(freq, trans, transerr)
 
 plt.errorbar(freq, trans/(np.max(trans)-adj),
              yerr=np.abs(transerr/(np.max(trans)-adj)),
+			 xerr=freqerr_array,
              marker='o',label = "data")
 
 if Zoom:
@@ -335,6 +351,7 @@ ax_main.errorbar(
     exp_detuning,
     exp_transmission,
     yerr=exp_error,
+	xerr=freqerr_array,
     fmt='x',
     color='black',
     label='Experiment',
@@ -360,6 +377,7 @@ ax_res.errorbar(
     exp_detuning,
     residuals,
     yerr=np.ones_like(residuals),
+	xerr=freqerr_array,
     fmt='x',
     color='black',
     markersize=4,
