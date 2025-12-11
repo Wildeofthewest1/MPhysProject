@@ -32,12 +32,12 @@ Detuning=np.linspace(-10,10,2000)*1e3 #Detuning range between -10 and 10 GHz. Ne
 E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,Ez]
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
-Temp =90#30#25
-AgNumberDensity = 5e15
+Temp = 90#60#30#25
+AgNumberDensity = 15.45e15
 AgCustomGroundPopulation = True
 
 Dline = 'D2'
-lcell = 75e-3
+lcell = 25e-3
 Bfield = 0
 Btheta = 0
 ShowTransPlot = False
@@ -360,8 +360,9 @@ ax_main.errorbar(
 
 ax_main.axhline(1, color='grey', lw=1)
 
-ax_main.text(x=3.05, y=0.4-0.05, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "right", va = "center") ##Ag-D2
-ax_main.text(x=3.9, y=0.4-0.05, s="@{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
+ax_main.text(x=3.05, y=0.49-0.05, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "right", va = "center") ##Ag-D2
+ax_main.text(x=3.9, y=0.49-0.05, s="@{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
+ax_main.text(x=3.9, y=0.4-0.05, s="lcell = {} mm".format(lcell*1000), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
 ax_main.text(x=3.9, y=0.32-0.05, s="$N_D$ = "+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "right", va = "center") ##Temperature
 
 ax_main.set_ylabel("Transmission")
@@ -383,6 +384,8 @@ ax_res.errorbar(
     markersize=4,
 	capsize = 2
 )
+
+print("residual mean = {}".format(np.mean(residuals)))
 
 ax_res.set_ylabel("Residuals\n(normalised)")
 ax_res.set_xlabel("Linear Detuning (GHz)")

@@ -155,7 +155,7 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = 1
+first = 2
 
 if first == 0:
 	folder = "SilverSpecFirst/"
@@ -322,6 +322,7 @@ elif first == 1:
 
 if first <2:
 	print(np.max(transmission))
+	print(np.min(transmission))
 	plt.errorbar(xs, transmission/np.max(transmission),
 				yerr=np.abs(transmission_err/np.max(transmission)),
 				marker='o')
@@ -332,14 +333,18 @@ if first <2:
 	plt.ylabel("Transmission")
 
 else:
-	plt.errorbar(xs, transmission/0.3301348605312241,
-				yerr=np.abs(transmission_err/0.3301348605312241),
+
+	transmission = transmission/0.3301348605312241
+	transmission_err = transmission_err/0.3301348605312241
+
+	plt.errorbar(xs, transmission - np.min(transmission) + (0.08973872980696299/0.3301348605312241),
+				yerr=np.abs(transmission_err),
 				marker='o')
-	plt.ylim(0,1.1)
-	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+	#plt.ylim(0,1.1)
+	#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 	plt.xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18])
 	plt.xlabel("Time (Minutes)")
-	plt.ylabel("Transmission")
+	plt.ylabel("On resonance Transmission")
 
 plt.tight_layout()
 
@@ -347,6 +352,8 @@ if first == 0:
 	plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
 elif first == 1:
 	plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
+elif first == 2:
+	plt.savefig("TransmissionTime", dpi=300, bbox_inches='tight')
 
 if first < 2:
 	plt.ylim([0, 1.1])
