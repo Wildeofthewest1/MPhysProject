@@ -70,7 +70,7 @@ else:
 		Temp = 11
 
 if AgCustomGroundPopulation:
-	a = 0.44
+	a = 0.4#0.44
 	b = (1-a)/3
 	custpop = [a, b, b, b]
 else:
@@ -236,8 +236,8 @@ df_dx = -2
 df_dl = -c / (lambd**2)
 
 freq_total_err = np.sqrt(
-    (df_dx * freqerr)**2 +
-    (df_dl * lambderr)**2
+	(df_dx * freqerr)**2 +
+	(df_dl * lambderr)**2
 )
 
 # Make an array matching freq
@@ -246,9 +246,9 @@ freqerr_array = np.full_like(freq, freq_total_err)
 #print(freq, trans, transerr)
 
 plt.errorbar(freq, trans/(np.max(trans)-adj),
-             yerr=np.abs(transerr/(np.max(trans)-adj)),
+			 yerr=np.abs(transerr/(np.max(trans)-adj)),
 			 xerr=freqerr_array,
-             marker='o',label = "data")
+			 marker='o',label = "data")
 
 if Zoom:
 	plt.ylim([0.2, 1.1])
@@ -313,10 +313,10 @@ residuals = (exp_transmission - theory_interp) / exp_error
 ###############################################
 
 fig, (ax_main, ax_res) = plt.subplots(
-    2, 1,
-    figsize=(8, 6),
-    sharex=True,
-    gridspec_kw={"height_ratios": [3, 1]}
+	2, 1,
+	figsize=(8, 6),
+	sharex=True,
+	gridspec_kw={"height_ratios": [3, 1]}
 )
 
 ###########################################################
@@ -326,21 +326,25 @@ fig, (ax_main, ax_res) = plt.subplots(
 colours = ['deepskyblue', 'firebrick', 'purple', 'darkkhaki', 'orange', 'pink']
 
 for i in range(len(S0)-1):
-    if len(S0) >= 7:
-        color = colours[1] if i <= 2 else colours[0]
-    else:
-        color = colours[1] if i <= 1 else colours[0]
+	if len(S0) >= 7:
+		color = colours[1] if i <= 2 else colours[0]
+	else:
+		color = colours[1] if i <= 1 else colours[0]
 
-    ax_main.plot(theory_detuning, S0[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	ax_main.plot(theory_detuning, S0[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	idx = np.argmin(S0[i].real)
+	ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
 
 # Isotopes
 for i in range(len(S0_1)-1):
-    if len(S0_1) >= 7:
-        color = colours[3] if i <= 2 else colours[2]
-    else:
-        color = colours[3] if i <= 1 else colours[2]
+	if len(S0_1) >= 7:
+		color = colours[3] if i <= 2 else colours[2]
+	else:
+		color = colours[3] if i <= 1 else colours[2]
 
-    ax_main.plot(theory_detuning, S0_1[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	ax_main.plot(theory_detuning, S0_1[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	idx = np.argmin(S0_1[i].real)
+	ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
 
 # Total theoretical transmission
 ax_main.plot(theory_detuning, theory_curve, color="grey", linewidth=1.5, label="Theory (Total)")
@@ -348,13 +352,13 @@ ax_main.fill_between(theory_detuning, theory_curve, 1, color="lightgrey", alpha=
 
 # Experimental data
 ax_main.errorbar(
-    exp_detuning,
-    exp_transmission,
-    yerr=exp_error,
+	exp_detuning,
+	exp_transmission,
+	yerr=exp_error,
 	xerr=freqerr_array,
-    fmt='x',
-    color='black',
-    label='Experiment',
+	fmt='x',
+	color='black',
+	label='Experiment',
 	capsize = 2
 )
 
@@ -375,13 +379,13 @@ ax_main.set_xlim([-2.5, 4])
 
 ax_res.axhline(0, color='grey', linewidth=1)
 ax_res.errorbar(
-    exp_detuning,
-    residuals,
-    yerr=np.ones_like(residuals),
+	exp_detuning,
+	residuals,
+	yerr=np.ones_like(residuals),
 	xerr=freqerr_array,
-    fmt='x',
-    color='black',
-    markersize=4,
+	fmt='x',
+	color='black',
+	markersize=4,
 	capsize = 2
 )
 
