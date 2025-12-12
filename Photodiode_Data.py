@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 from matplotlib import rcParams
 from matplotlib.ticker import AutoMinorLocator
+import pandas as pd
 
 # ----------------------------------------------------
 # Matplotlib styling
@@ -112,7 +113,7 @@ frequencies2 = (456775.401,
 				456772.504,
 				456772.446)
 
-import pandas as pd
+
 
 df = pd.DataFrame({
     "freq1": frequencies,
@@ -126,6 +127,213 @@ df = pd.DataFrame({
 
 df.to_csv("frequencies2.csv", index=False)
 
+"""
+
+"""
+frequencies3 = (456778.966,
+				456778.967,
+				456778.884,
+				456778.773,
+				456778.638,
+				456778.495,
+				456778.346,
+				456778.185,
+				456778.025,
+				456777.838,
+				456777.668,
+				456777.507,
+				456777.308,
+				456777.124,
+				456776.932,
+				456776.743,
+				456776.544,
+				456776.334,
+				456776.148,
+				456775.954,
+				456775.864,
+				456775.787,
+				456775.740,
+				456775.625,
+				456775.569,
+				456775.506,
+				456775.446,
+				456775.382,
+				456775.319,
+				456775.263,
+				456775.203,
+				456775.144,
+				456775.079,
+				456775.020,
+				456774.961,
+				456774.902,
+				456774.835,
+				456774.772,
+				456774.715,
+				456774.636,
+				456774.578,
+				456774.518,
+				456774.448,
+				456774.847,
+				456774.828,
+				456774.815,
+				456774.793,
+				456774.777,
+				456774.757,
+				456774.732,
+				456774.714,
+				456774.697,
+				456774.684,
+				456774.663,
+				456774.647,
+				456774.627,
+				456774.610,
+				456774.589,
+				456774.570,
+				456774.552,
+				456774.531,
+				456774.513,
+				456774.495,
+				456774.471,
+				456774.452,
+				456774.434,
+				456774.415,
+				456774.398,
+				456774.378,
+				456774.361,
+				456774.341,
+				456774.320,
+				456774.301,
+				456774.284,
+				456774.266,
+				456774.243,
+				456774.233,
+				456774.203,
+				456774.185,
+				456774.165,
+				456774.143,
+				456774.125,
+				456774.101,
+				456774.084,
+				456774.061,
+				456774.043,
+				456774.024,
+				456774.004,
+				456773.980,
+				456773.962,
+				456773.939,
+				456773.919,
+				456773.902,
+				456773.879,
+				456773.858,
+				456773.835,
+				456773.815,
+				456773.793,
+				456773.778,
+				456773.759,
+				456773.734,
+				456773.712,
+				456773.690,
+				456773.670,
+				456773.648,
+				456773.629,
+				456773.611,
+				456773.586,
+				456773.565,
+				456773.544,
+				456773.527,
+				456773.505,
+				456773.485,
+				456773.463,
+				456773.442,
+				456773.421,
+				456773.399,
+				456773.378,
+				456773.357,
+				456773.338,
+				456773.280,
+				456773.226,
+				456773.167,
+				456773.106,
+				456773.046,
+				456772.984,
+				456772.917,
+				456772.857,
+				456772.664,
+				456772.469,
+				456772.256,
+				456772.050,
+				456771.792,
+				456771.517,
+				456771.377,
+				456771.177,
+				456770.972,
+				456770.763,
+				456770.508,
+				456770.332,
+				456770.134,
+				456769.923,
+				456769.711,
+				456769.501,
+				456769.286)
+
+df = pd.DataFrame({
+    "freq3": frequencies3
+})
+
+df.to_csv("frequencies3.csv", index=False)
+
+times = (15,
+		 60*1,
+		 60*1+59,
+		 60*2+30,
+		 60*3+00,
+		 60*3+30,
+		 60*3+51,
+		 60*4+00,
+		 60*4+30,
+		 60*5+00,
+		 60*5+31,
+		 60*6+00,
+		 60*6+30,
+		 60*7+00,
+		 60*7+30,
+		 60*8+2,
+		 60*8+31,
+		 60*9+00,
+		 60*9+30,
+		 60*10+00,
+		 60*10+30,
+		 60*11+7,
+		 60*11+30,
+		 60*12+00,
+		 60*13+00,
+		 60*13+35,
+		 60*14+30,
+		 60*15+00,
+		 60*15+30,
+		 60*16+00,
+		 60*16+37,
+		 60*17+00,
+		 60*17+32,
+		 60*18+00,
+		 60*18+30,
+		 60*19+00,
+		 60*19+30,
+		 60*20+00,
+		 60*20+30,
+		 60*22+38,
+		 60*28+48,
+		 60*30+00,
+		 60*36+00)
+
+frequencies4 = times#()
+
+df = pd.DataFrame({
+    "times": times,
+	"freq4": frequencies4
+})
+
+df.to_csv("times.csv", index=False)
 """
 
 # ----------------------------------------------------
@@ -155,14 +363,18 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = 2
+first = 3
 
 if first == 0:
 	folder = "SilverSpecFirst/"
 elif first == 1:
 	folder = "SilverSpecSecond/"
-else:
+elif first == 2:
 	folder = "VoltageTime/"
+elif first == 3:
+	folder = "TEEMP/"
+elif first == 4:
+	folder = "SilverSpecThird/"
 
 base_path = "Photodiode_Data/" + folder
 
@@ -209,7 +421,6 @@ for i in range(0, len(files)):
 		background2 = (avg2, avg2err)
 		print("doneeee")
 
-
 averages1_means = np.array([m for (m, e) in averages1])
 averages1_errs  = np.array([e for (m, e) in averages1])
 
@@ -226,18 +437,25 @@ background2_mean, background2_err = background2
 import pandas as pd
 frequencies = pd.read_csv("frequencies1.csv")
 frequencies2 = pd.read_csv("frequencies2.csv")
+frequencies3 = pd.read_csv("frequencies3.csv")
+frequencies4 = pd.read_csv("times.csv")["freq4"]
+times = np.array(pd.read_csv("times.csv")["times"])/60
 
 xs1 = np.linspace(1, 4, len(files)-1)
 xs2 = np.linspace(0, len(files)-2, len(files)-1)
 
-print(xs2)
+print(times)
 
 if first == 0:
-	xs = -np.array(frequencies)*2 + (c / (328.1625))# - 633
+	xs = -np.array(frequencies)*2 + (c / (328.1629601))# - 633
 elif first == 1:
-	xs = -np.array(frequencies2)*2 + (c / (328.1625))# - 633
-else:
+	xs = -np.array(frequencies2)*2 + (c / (328.1629601))# - 633
+elif first == 2:
 	xs = xs2
+elif first == 3:
+	xs = times
+elif first == 4:
+	xs = -np.array(frequencies3)*2 + (c / (328.1629601))# - 633
 
 y1 = np.abs(np.abs(averages1_means) - np.abs(background1_mean))
 y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -252,7 +470,7 @@ y2_err = np.sqrt(y2_err**2 + (angle_unc * y2)**2)
 # --------------------------------------------------------
 # Add % uncertainty due to beam power fluctuations
 # --------------------------------------------------------
-power_frac = 0.05   # 5 percent
+power_frac = 0.01   # 1 percent
 
 y1_err = np.sqrt(y1_err**2 + (power_frac * y1)**2)
 y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)
@@ -274,6 +492,7 @@ fit_line1 = np.polyval(coeffs1, xs1)
 # Plot original + fit
 # ----------------------------------------------------
 
+"""
 print(y1)
 
 if first == 2:
@@ -293,7 +512,7 @@ if first == 0:
 elif first == 1:
 	plt.savefig("Photodiode_Plot2", dpi=300, bbox_inches='tight')
 plt.show()
-
+"""
 # ----------------------------------------------------
 # Transmission and uncertainty propagation
 # ----------------------------------------------------
@@ -318,9 +537,28 @@ elif first == 1:
 		"Transmission2err": transmission_err,
 	})
 	df.to_csv("transmission2.csv", index=False)
+elif first == 4:
+	df = pd.DataFrame({
+	"Transmission4": transmission,
+	"Transmission4err": transmission_err,
+	})
+	df.to_csv("transmission4.csv", index=False)
 ######## save to csv
 
-if first <2:
+print(len(transmission),len(xs))
+
+if first != 2 and first != 3:
+	print(np.max(transmission))
+	print(np.min(transmission))
+	plt.errorbar(xs, transmission/np.max(transmission),
+				yerr=np.abs(transmission_err/np.max(transmission)),
+				fmt='.')
+	
+	plt.ylim(0,1.1)
+	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+	plt.xlabel("Detuning (GHz)")
+	plt.ylabel("Transmission")
+elif first == 3:
 	print(np.max(transmission))
 	print(np.min(transmission))
 	plt.errorbar(xs, transmission/np.max(transmission),
@@ -329,11 +567,9 @@ if first <2:
 	
 	plt.ylim(0,1.1)
 	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-	plt.xlabel("Detuning (GHz)")
+	plt.xlabel("Time (Minutes)")
 	plt.ylabel("Transmission")
-
 else:
-
 	transmission = transmission/0.3301348605312241
 	transmission_err = transmission_err/0.3301348605312241
 

@@ -45,23 +45,6 @@ class Rb87:
     gI = -0.0009951414 
     mass = 86.909180520*amu
     FS = 7.123e6 # Fine-structure splitting (MHz)
-
-class Ag107:
-    """Constants for silver-107 atom"""
-    I = 0.5
-    As = 1712.512111  # MHz (ground-state hyperfine A constant, Uhlenberg et al 2000)
-    gI = 0
-    mass = 106.90509 * amu
-    FS = 0.0
-
-class Ag109:
-    """Constants for silver-109 atom"""
-    I = 0.5
-    As = 1976.932075
-    gI = 0
-    mass = 108.904755 * amu
-    FS = 0.0
-
 class Cs:
     """Constants relating to the caesium-133 atom"""
     I  = 3.5         #Nuclear spin
@@ -97,9 +80,7 @@ class Na:
     gI = -0.00080461080
     mass = 22.9897692807*amu
     FS = 508.8487162e6 - 508.3331958e6 # Fine-structure splitting (MHz)
-	
 # Element-Transition constants
-
 class RbD1Transition:
     """Constants relating to the rubidium D1 transition"""
     wavelength=794.978969380e-9 #The weighted linecentre of the rubidium D1 line in m
@@ -114,15 +95,6 @@ class RbD2Transition:
     NatGamma=6.065
     dipoleStrength=3.0*sqrt(e0*hbar*(2.0*NatGamma*(10.0**6))*(wavelength**3)/(8.0*pi))
     v0=384230426.6e6
-
-class AgD2Transition:
-    """Constants relating to the silver D2 transition"""
-    wavelength=328.1625e-9#m
-    wavevectorMagnitude=2.0*pi/wavelength
-    NatGamma=1.472e2
-    dipoleStrength=3.0*sqrt(e0*hbar*(2.0*NatGamma*(10.0**6))*(wavelength**3)/(8.0*pi))
-    v0 = c/wavelength
-
 class CsD1Transition:
     """Constants relating to the caesium D1 transition"""
     wavelength=894.59295986e-9 #The weighted linecentre of the caesium D1 line in m
@@ -172,14 +144,6 @@ class IdealD1Transition:
     NatGamma = 6 #Rubidium D1 natural linewidth in MHz
     dipoleStrength = 3.0*sqrt(e0*hbar*(2.0*NatGamma*(10.0**6))*(wavelength**3)/(8.0*pi))
     v0 = 377107407.299e6 #The weighted linecentre of the rubidium D1 line in Hz
-# transitions dictionary
-transitions = {'RbD1':RbD1Transition, 'RbD2':RbD2Transition,
-						'CsD1':CsD1Transition, 'CsD2':CsD2Transition,
-						'KD1':KD1Transition, 'KD2':KD2Transition,
-						'NaD1':NaD1Transition, 'NaD2':NaD2Transition,
-                        'AgD2': AgD2Transition,
-						'IdealD1':IdealD1Transition
-					}				
 # Isotope-Transition constants
 class Ideal_D1:
 	Ap = 0
@@ -209,21 +173,6 @@ class Rb87_D2:
     Ap = 84.7185
     Bp = 12.4965
     IsotopeShift = -56.361 #MHz
-
-class Ag107_D2:
-    """Constants relating to silver-107 and the D2 transition"""
-    #Hyperfine constants in units of MHz
-    Ap = 31.7
-    Bp = 0
-    IsotopeShift = -229.24 #MHz
-
-class Ag109_D2:
-    """Constants relating to silver-109 and the D2 transition"""
-    #Hyperfine constants in units of MHz
-    Ap = 36.7
-    Bp = 0
-    IsotopeShift = 246.76 #MHz
-
 class Cs_D1:
     """Constants relating to the caesium-133 atom and the D1 transition"""
     #Hyperfine constants in units of MHz
@@ -284,3 +233,50 @@ class Na_D2:
     Ap = 18.534
     Bp = 2.724
     IsotopeShift = 0.0 #Only one isotope.
+
+class Ag107:
+    """Constants for silver-107 atom"""
+    I = 0.5
+    As = 1712.512111  # MHz (ground-state hyperfine A constant, Uhlenberg et al 2000)
+    gI = 0
+    mass = 106.90509 * amu
+    FS = 0.0
+
+class Ag109:
+    """Constants for silver-109 atom"""
+    I = 0.5
+    As = 1976.932075
+    gI = 0
+    mass = 108.904755 * amu
+    FS = 0.0
+
+class AgD2Transition:
+    """Constants relating to the silver D2 transition"""
+    wavelength=328.1629601e-9#m
+    wavevectorMagnitude=2.0*pi/wavelength
+    NatGamma=1.472e2
+    dipoleStrength=3.0*sqrt(e0*hbar*(2.0*NatGamma*(10.0**6))*(wavelength**3)/(8.0*pi))
+    v0 = c/wavelength
+
+class Ag107_D2:
+    """Constants relating to silver-107 and the D2 transition"""
+    #Hyperfine constants in units of MHz
+    Ap = 31.7
+    Bp = 0
+    IsotopeShift = -229.24 #MHz
+
+class Ag109_D2:
+    """Constants relating to silver-109 and the D2 transition"""
+    #Hyperfine constants in units of MHz
+    Ap = 36.7
+    Bp = 0
+    IsotopeShift = 246.76 #MHz
+
+# transitions dictionary
+transitions = {'RbD1':RbD1Transition, 'RbD2':RbD2Transition,
+						'CsD1':CsD1Transition, 'CsD2':CsD2Transition,
+						'KD1':KD1Transition, 'KD2':KD2Transition,
+						'NaD1':NaD1Transition, 'NaD2':NaD2Transition,
+                        'AgD2': AgD2Transition,
+						'IdealD1':IdealD1Transition
+					}				
