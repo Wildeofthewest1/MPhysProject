@@ -363,7 +363,7 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = 3
+first = 4
 
 if first == 0:
 	folder = "SilverSpecFirst/"
@@ -539,10 +539,10 @@ elif first == 1:
 	df.to_csv("transmission2.csv", index=False)
 elif first == 4:
 	df = pd.DataFrame({
-	"Transmission4": transmission,
-	"Transmission4err": transmission_err,
+	"Transmission3": transmission,
+	"Transmission3err": transmission_err,
 	})
-	df.to_csv("transmission4.csv", index=False)
+	df.to_csv("transmission3.csv", index=False)
 ######## save to csv
 
 print(len(transmission),len(xs))

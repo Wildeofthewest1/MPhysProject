@@ -263,14 +263,14 @@ class Ag107_D2:
     #Hyperfine constants in units of MHz
     Ap = 31.7
     Bp = 0
-    IsotopeShift = -229.24 #MHz
+    IsotopeShift = 229.24 #MHz
 
 class Ag109_D2:
     """Constants relating to silver-109 and the D2 transition"""
     #Hyperfine constants in units of MHz
     Ap = 36.7
     Bp = 0
-    IsotopeShift = 246.76 #MHz
+    IsotopeShift = -246.76 #MHz
 
 # transitions dictionary
 transitions = {'RbD1':RbD1Transition, 'RbD2':RbD2Transition,

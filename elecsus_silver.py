@@ -70,14 +70,13 @@ else:
 		Temp = 11
 
 if AgCustomGroundPopulation:
-	a = 0.4#0.44
+	a = 0.44#0.44
 	b = (1-a)/3
 	custpop = [a, b, b, b]
 else:
 	custpop = None
 
-first = True
-first = False
+first = 2
 
 Zoom = True
 Zoom = False
@@ -93,10 +92,20 @@ p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Bt
 
 [S0_2] = mf.get_spectra(Detuning,E_in,p_dict3,outputs=['S0'])
 
+line = int(Dline[-1])
+
+def format_sci_tex(num):#format long numbers in standard form
+	#Return LaTeX-style scientific notation, e.g. 3x10¹⁵.
+	exp = int(np.floor(np.log10(num)))
+	coeff = num / 10**exp
+	return rf"${coeff:.1f} times 10^{{{exp}}}$"
+
+"""
 #plt.figure(figsize=(5, 3.5))
 plt.figure(figsize=(8, 5))
 
 colours = ['deepskyblue', 'firebrick', 'purple', 'darkkhaki', 'orange', 'pink']
+
 
 for i in range(len(S0)-1):
 
@@ -173,21 +182,18 @@ plt.xlabel("Linear Detuning (GHz)")
 
 adjust = 0.17
 
-line = int(Dline[-1])
+
 
 Text_y = 1.04 #1.09
 
 plt.text(x=-8, y=Text_y, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "left", va = "center") ##Ag-D2
 plt.text(x=8, y=Text_y, s="{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
 
-def format_sci_tex(num):#format long numbers in standard form
-	"""Return LaTeX-style scientific notation, e.g. 3×10¹⁵."""
-	exp = int(np.floor(np.log10(num)))
-	coeff = num / 10**exp
-	return rf"${coeff:.1f} \times 10^{{{exp}}}$"
 
 if choice == 1:
 	plt.text(x=-8, y=0.95, s="$N_D$ = "+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "left", va = "center") ##Temperature
+
+"""
 
 if ShowTransPlot:
 	plt.text(x=-8, y=0.12, s="$5^2$S$_{1/2}$", fontsize=fontsz, ha = "left", va = "center")#5s2S1/2
@@ -200,8 +206,9 @@ if ShowTransPlot:
 	plt.text(x=6.5+adjust, y=0.12, s="$F$", fontsize=fontsz, ha = "left", va = "center")#F
 	plt.text(x=6.5+adjust, y=0.44, s="$F^'$", fontsize=fontsz, ha = "left", va = "center")#F'
 	# --- Overlay the image ---
-	img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
-	plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
+	#img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
+	#plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
+
 
 ##########################################
 #Add data to figure
@@ -210,21 +217,28 @@ if ShowTransPlot:
 import pandas as pd
 frequencies = pd.read_csv("frequencies1.csv")
 frequencies2 = pd.read_csv("frequencies2.csv")
+frequencies3 = pd.read_csv("frequencies3.csv")
 transmissions1 = pd.read_csv("transmission1.csv")
 transmissions2 = pd.read_csv("transmission2.csv")
+transmissions3 = pd.read_csv("transmission3.csv")
+
 c = 2.99792458e8
 lambd = 328.1629601#(22)
 
-
-if first:
+if first == 0:
 	freq = np.array(frequencies["freq1"])
 	trans = np.array(transmissions1["Transmission1"])
 	transerr = np.array(transmissions1["Transmission1err"])
 	adj = 0.011
-else:
+elif first == 1:
 	freq = np.array(frequencies2["freq2"])
 	trans = np.array(transmissions2["Transmission2"])
 	transerr = np.array(transmissions2["Transmission2err"])
+	adj = 0
+elif first == 2:
+	freq = np.array(frequencies3["freq3"])
+	trans = np.array(transmissions3["Transmission3"])
+	transerr = np.array(transmissions3["Transmission3err"])
 	adj = 0
 
 freqerr = 0.01 #0.01GHz
@@ -244,7 +258,7 @@ freq_total_err = np.sqrt(
 freqerr_array = np.full_like(freq, freq_total_err)
 
 #print(freq, trans, transerr)
-
+"""
 plt.errorbar(freq, trans/(np.max(trans)-adj),
 			 yerr=np.abs(transerr/(np.max(trans)-adj)),
 			 xerr=freqerr_array,
@@ -256,7 +270,7 @@ if Zoom:
 else:
 	plt.ylim([0, 1.1])
 	plt.xlim([-8.5,8.5])
-
+"""
 
 #plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
 #plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
@@ -267,18 +281,8 @@ else:
 
 #plt.legend()
 
-plt.show()
-
-#name = "Ag_Spec_Matt/375_0.bmp"
-
-#img1 = mpimg.imread(name)
-#plt.imshow(img1)
-
-#newname = name[13:-3]+"png"
-
-#plt.savefig(newname, dpi=300, bbox_inches='tight')
-
 #plt.show()
+
 
 ###############################################
 # THEORETICAL CURVE (already computed above)
@@ -290,10 +294,25 @@ theory_detuning = Detuning / 1e3   # in GHz
 ###############################################
 # EXPERIMENTAL DATA PROCESSING
 ###############################################
+if first != 2:
+	exp_detuning = freq
+	exp_transmission = trans / (np.max(trans) - adj)
+	exp_error = np.abs(transerr / (np.max(trans) - adj))
+else:
+	# ----------------------------------------------------
+	# Remove region for fitting
+	# ----------------------------------------------------
+	exclude = (freq > -3) & (freq < 4)
+	mask = ~exclude
 
-exp_detuning = freq
-exp_transmission = trans / (np.max(trans) - adj)
-exp_error = np.abs(transerr / (np.max(trans) - adj))
+	# Linear fit to CH1
+	coeffs1 = np.polyfit(freq[mask], trans[mask], 1)
+	m1, c1 = coeffs1
+	fit_line1 = np.polyval(coeffs1, freq)
+
+	exp_detuning = freq
+	exp_transmission = trans / fit_line1
+	exp_error = np.abs(transerr / fit_line1)
 
 ###############################################
 # INTERPOLATE THEORY ONTO EXPERIMENTAL POINTS
@@ -362,6 +381,14 @@ ax_main.errorbar(
 	capsize = 2
 )
 
+if first == 2:
+	ax_main.plot(
+		exp_detuning,
+		fit_line1/fit_line1,
+		label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}",
+		color='red'
+	)
+
 ax_main.axhline(1, color='grey', lw=1)
 
 ax_main.text(x=3.05, y=0.49-0.05, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "right", va = "center") ##Ag-D2
@@ -371,7 +398,9 @@ ax_main.text(x=3.9, y=0.32-0.05, s="$N_D$ = "+format_sci_tex(AgNumberDensity), f
 
 ax_main.set_ylabel("Transmission")
 ax_main.set_ylim([0.2, 1.1])
-ax_main.set_xlim([-2.5, 4])
+#ax_main.set_xlim([-8, 8])
+
+#ax_main.legend()
 
 ###########################################################
 # RESIDUAL SUBPLOT
@@ -394,7 +423,7 @@ print("residual mean = {}".format(np.mean(residuals)))
 ax_res.set_ylabel("Residuals\n(normalised)")
 ax_res.set_xlabel("Linear Detuning (GHz)")
 
-ax_res.set_ylim([-3, 3])  # Adjust as needed
+#ax_res.set_ylim([-3, 3])  # Adjust as needed
 
 ###########################################################
 # SAVE & SHOW
