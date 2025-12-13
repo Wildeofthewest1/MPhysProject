@@ -32,15 +32,28 @@ Detuning=np.linspace(-10,10,2000)*1e3 #Detuning range between -10 and 10 GHz. Ne
 E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,Ez]
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
-Temp = 90#60#30#25
-AgNumberDensity = 15.45e15
+
+fitresults = (130, 1.679e+16, 0.45, 267.99, 246.76)
+
+#Temp = 200.00#147.53
+#AgNumberDensity = 1.671e+16#1.678e+16
+#AgIsotopeShift = (229.24,-246.76)#476 #MHz
+first = 2
 AgCustomGroundPopulation = True
+
+Temp = fitresults[0]
+AgNumberDensity = fitresults[1]
+customa = fitresults[2]
+AgIsotopeShift = (fitresults[3],fitresults[4])
+
+deltaf = 1.09
 
 Dline = 'D2'
 lcell = 25e-3
 Bfield = 0
 Btheta = 0
 ShowTransPlot = False
+
 
 if choice == 0:
 	element = 'Rb'
@@ -70,20 +83,18 @@ else:
 		Temp = 11
 
 if AgCustomGroundPopulation:
-	a = 0.44#0.44
+	a = customa#0.444#0.44
 	b = (1-a)/3
 	custpop = [a, b, b, b]
 else:
 	custpop = None
 
-first = 2
-
 Zoom = True
 Zoom = False
 
-p_dict={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 1, 'CustomPop': custpop}#, 'Ag107frac':100}
-p_dict2={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 2, 'CustomPop': custpop}
-p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 0, 'CustomPop': custpop}
+p_dict={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 1, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift}#, 'Ag107frac':100}
+p_dict2={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 2, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift}
+p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 0, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift}
 
 #A 75 mm cell of natural abundance Rb at 20C. No bfield and hence no angle Btheta between the k-vector and the mag field. 
 [S0,S1,S2,S3,E_out,Ix,Iy]=mf.get_spectra(Detuning,E_in,p_dict,outputs=['S0','S1','S2','S3','E_out','Ix','Iy'])
@@ -98,7 +109,7 @@ def format_sci_tex(num):#format long numbers in standard form
 	#Return LaTeX-style scientific notation, e.g. 3x10¹⁵.
 	exp = int(np.floor(np.log10(num)))
 	coeff = num / 10**exp
-	return rf"${coeff:.1f} times 10^{{{exp}}}$"
+	return rf"${coeff:.1f} \times 10^{{{exp}}}$"
 
 """
 #plt.figure(figsize=(5, 3.5))
@@ -187,7 +198,7 @@ adjust = 0.17
 Text_y = 1.04 #1.09
 
 plt.text(x=-8, y=Text_y, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "left", va = "center") ##Ag-D2
-plt.text(x=8, y=Text_y, s="{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
+#plt.text(x=8, y=Text_y, s=r"{}$degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
 
 
 if choice == 1:
@@ -195,17 +206,17 @@ if choice == 1:
 
 """
 
-if ShowTransPlot:
-	plt.text(x=-8, y=0.12, s="$5^2$S$_{1/2}$", fontsize=fontsz, ha = "left", va = "center")#5s2S1/2
-	plt.text(x=-8, y=0.44, s="$5^2$P$_{3/2}$", fontsize=fontsz, ha = "left", va = "center")#5p2P3/2
-	plt.text(x=-3, y=0.28, s="D$_2$", fontsize=fontsz, ha = "left", va = "center")#D2
-	plt.text(x=5.5+adjust, y=0.05, s="0", fontsize=fontsz, ha = "left", va = "center")#F=0
-	plt.text(x=5.5+adjust, y=0.18, s="1", fontsize=fontsz, ha = "left", va = "center")#F=1
-	plt.text(x=5.5+adjust, y=0.37, s="1", fontsize=fontsz, ha = "left", va = "center")#F'=1
-	plt.text(x=5.5+adjust, y=0.49, s="2", fontsize=fontsz, ha = "left", va = "center")#F'=2
-	plt.text(x=6.5+adjust, y=0.12, s="$F$", fontsize=fontsz, ha = "left", va = "center")#F
-	plt.text(x=6.5+adjust, y=0.44, s="$F^'$", fontsize=fontsz, ha = "left", va = "center")#F'
-	# --- Overlay the image ---
+#if ShowTransPlot:
+#	plt.text(x=-8, y=0.12, s="$5^2$S$_{1/2}$", fontsize=fontsz, ha = "left", va = "center")#5s2S1/2
+#	plt.text(x=-8, y=0.44, s="$5^2$P$_{3/2}$", fontsize=fontsz, ha = "left", va = "center")#5p2P3/2
+#	plt.text(x=-3, y=0.28, s="D$_2$", fontsize=fontsz, ha = "left", va = "center")#D2
+#	plt.text(x=5.5+adjust, y=0.05, s="0", fontsize=fontsz, ha = "left", va = "center")#F=0
+#	plt.text(x=5.5+adjust, y=0.18, s="1", fontsize=fontsz, ha = "left", va = "center")#F=1
+#	plt.text(x=5.5+adjust, y=0.37, s="1", fontsize=fontsz, ha = "left", va = "center")#F'=1
+#	plt.text(x=5.5+adjust, y=0.49, s="2", fontsize=fontsz, ha = "left", va = "center")#F'=2
+#	plt.text(x=6.5+adjust, y=0.12, s="$F$", fontsize=fontsz, ha = "left", va = "center")#F
+#	plt.text(x=6.5+adjust, y=0.44, s="$F^'$", fontsize=fontsz, ha = "left", va = "center")#F'
+#	# --- Overlay the image ---
 	#img = mpimg.imread(r"C:\Users\Matt\Desktop\Lvl_4\Project\SilverD2Diagram109.png")
 	#plt.imshow(img, extent=[-5, 5.2+adjust, 0.05, 0.5], aspect='auto', alpha=0.7)
 
@@ -244,7 +255,7 @@ elif first == 2:
 freqerr = 0.01 #0.01GHz
 lambderr = 0.0000022
 
-freq = -np.array(freq)*2 + (c / (lambd)) + 1.09
+freq = -np.array(freq)*2 + (c / (lambd)) + deltaf#1.09
 
 df_dx = -2
 df_dl = -c / (lambd**2)
@@ -302,7 +313,7 @@ else:
 	# ----------------------------------------------------
 	# Remove region for fitting
 	# ----------------------------------------------------
-	exclude = (freq > -3) & (freq < 4)
+	exclude = (freq > -5) & (freq < 2.5)
 	mask = ~exclude
 
 	# Linear fit to CH1
@@ -391,14 +402,14 @@ if first == 2:
 
 ax_main.axhline(1, color='grey', lw=1)
 
-ax_main.text(x=3.05, y=0.49-0.05, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "right", va = "center") ##Ag-D2
-ax_main.text(x=3.9, y=0.49-0.05, s="@{}$\degree$C".format(Temp), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
-ax_main.text(x=3.9, y=0.4-0.05, s="lcell = {} mm".format(lcell*1000), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
-ax_main.text(x=3.9, y=0.32-0.05, s="$N_D$ = "+format_sci_tex(AgNumberDensity), fontsize=fontsz-2, ha = "right", va = "center") ##Temperature
+#ax_main.text(x=3.05, y=0.49-0.05, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "right", va = "center") ##Ag-D2
+ax_main.text(x=3.9, y=0.4-0.05, s=element+"-D$_{}$".format(line)+r" @{}$\degree$C".format(Temp), fontsize=fontsz+1, ha = "right", va = "center") ##Temperature
+#ax_main.text(x=3.9, y=0.4-0.05, s="lcell = {} mm".format(lcell*1000), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
+ax_main.text(x=3.9, y=0.32-0.05, s="$N_D/L_{cell}$ = "+format_sci_tex(AgNumberDensity/lcell), fontsize=fontsz-3, ha = "right", va = "center") ##Temperature
 
 ax_main.set_ylabel("Transmission")
 ax_main.set_ylim([0.2, 1.1])
-#ax_main.set_xlim([-8, 8])
+ax_main.set_xlim([-3, 4])
 
 #ax_main.legend()
 

@@ -29,7 +29,8 @@ p_dict_defaults = {	'Elem':'Rb', 'Dline':'D2',
 							'Constrain':True, 'DoppTemp':20.,
 							'Rb85frac':72.17, 'K40frac':0.01, 'K41frac':6.73,'Ag107frac':51.839,
 							'BoltzmannFactor':True, 'AgNumden': 3e15, 'Isotope_Combination': 0,
-							'CustomPop' : None}
+							'CustomPop' : None,
+							'AgIsotope_shift': (229.24,-246.76)}
 
 def FreqStren(groundLevels, excitedLevels, groundDim, excitedDim,
               Dline, hand, BoltzmannFactor=True, T=293.16, tol_MHz=1.0,
@@ -86,11 +87,11 @@ def FreqStren(groundLevels, excitedLevels, groundDim, excitedDim,
                 transitionFrequency.append(dE)
                 transitionStrength.append(s)
 
-                print(f"  Transition {transNo}: ground={gg}, excited={ee}, "
-                      f"ΔE={dE:.2f} MHz, strength={s:.3e}")
+                #print(f"  Transition {transNo}: ground={gg}, excited={ee}, "
+                #      f"ΔE={dE:.2f} MHz, strength={s:.3e}")
                 transNo += 1
 
-    print(f"[FreqStren] {Dline} {hand} → {transNo} mF transitions found")
+    #print(f"[FreqStren] {Dline} {hand} → {transNo} mF transitions found")
 
     # --- Group transitions with nearly equal ΔE (within tolerance) ---
     tf = np.array(transitionFrequency)
@@ -126,7 +127,7 @@ def FreqStren(groundLevels, excitedLevels, groundDim, excitedDim,
     grouped_freqs = np.array(grouped_freqs)
     grouped_strengths = np.array(grouped_strengths)
 
-    print(f"[FreqStren] {Dline} {hand} → {len(grouped_freqs)} unique ΔE groups (tol={tol_MHz} MHz)")
+    #print(f"[FreqStren] {Dline} {hand} → {len(grouped_freqs)} unique ΔE groups (tol={tol_MHz} MHz)")
 
     return grouped_freqs, grouped_strengths, len(grouped_freqs)
 
@@ -243,6 +244,10 @@ def calc_chi(X, p_dict,verbose=False):
 	else:
 		CustomPop = p_dict_defaults['CustomPop']
 
+	if 'AgIsotope_shift' in list(p_dict.keys()):
+		AgIsotopeShift = p_dict['AgIsotope_shift']
+	else:
+		AgIsotopeShift = p_dict_defaults['AgIsotope_shift']
 
 	# get parameters from dictionary
 	if 'Elem' in list(p_dict.keys()):
@@ -310,7 +315,7 @@ def calc_chi(X, p_dict,verbose=False):
    
 	# Change to fraction from %
 	Rb85frac = Rb85frac/100.0
-	print(Rb85frac)
+	#print(Rb85frac)
 	K40frac  = K40frac/100.0
 	K41frac  = K41frac/100.0
 
@@ -511,7 +516,7 @@ def calc_chi(X, p_dict,verbose=False):
 		Ag109frac = 1.0 - Ag107frac
 		if Ag107frac != 0.0:
 			Ag107atom = ac.Ag107
-			Ag107_ES = ht.Hamiltonian('Ag107', Dline, 1.0, Bfield)
+			Ag107_ES = ht.Hamiltonian('Ag107', Dline, 1.0, Bfield, AgIsotopeShift)
 
 			lenergy107, lstrength107, ltransno107 = FreqStren(
 				Ag107_ES.groundManifold,
@@ -581,7 +586,7 @@ def calc_chi(X, p_dict,verbose=False):
 	T += 273.15
 	DoppTemp += 273.15
 
-	print(T,DoppTemp)
+	#print(T,DoppTemp)
 
 	# For thin cells: Don't add Doppler effect, by setting DopplerTemperature to near-zero
 	# can then convolve with different velocity distribution later on
@@ -603,7 +608,7 @@ def calc_chi(X, p_dict,verbose=False):
 			NDensity = p_dict['AgNumden']
 		else:
 			NDensity= p_dict_defaults['AgNumden']
-		print(NDensity)
+		#print(NDensity)
 
 	#Calculate lorentzian broadening and shifts
 	gamma0 = 2.0*pi*transitionConst.NatGamma*1.e6
