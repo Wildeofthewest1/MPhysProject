@@ -15,7 +15,8 @@ delta_f = 1.09              # fixed frequency offset (GHz)
 # =========================================================
 # WORKING DIRECTORY
 # =========================================================
-os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+#os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
 # =========================================================

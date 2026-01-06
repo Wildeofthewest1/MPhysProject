@@ -34,7 +34,7 @@ E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,E
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
 
-fitresults = (130, 1.679e+16, 0.45, 267.99, 246.76)
+fitresults = (130.23, 1.679e+16, 0.45, 267.99, 246.76)
 
 #Temp = 200.00#147.53
 #AgNumberDensity = 1.671e+16#1.678e+16
@@ -443,5 +443,5 @@ ax_res.set_xlabel("Linear Detuning (GHz)")
 
 plt.subplots_adjust(hspace=0.05)
 
-#plt.savefig("TheoryExperiment_WithResiduals.png", dpi=600, bbox_inches='tight')
+#plt.savefig("FinalFittedMainPlot1.png", dpi=600, bbox_inches='tight')
 plt.show()
