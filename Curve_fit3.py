@@ -9,14 +9,14 @@ import os
 # =========================================================
 # USER SWITCHES (any combination)
 # =========================================================
-FIT_POPULATION   = True   # fit 'a'
-FIT_ISOTOPE      = False  # fit (shift107, shift109); if False -> use library defaults
-FIT_DELTA_F      = True  # fit global detuning offset delta_f (GHz)
-FIT_BASELINE     = True#True   # fit baseline polynomial multiplicatively
+FIT_POPULATION   = False   # fit 'a'
+FIT_ISOTOPE      = True  # fit (shift107, shift109); if False -> use library defaults
+FIT_DELTA_F      = False  # fit global detuning offset delta_f (GHz)
+FIT_BASELINE     = False#True   # fit baseline polynomial multiplicatively
 
 BASELINE_ORDER   = 1      # 0=constant, 1=linear, 2=quadratic
 
-delta_f_fixed = 1.09      # GHz, only used if FIT_DELTA_F=False
+delta_f_fixed = 1.11171      # GHz, only used if FIT_DELTA_F=False
 
 FITRESULT_ORDER = [
     'Temp',
