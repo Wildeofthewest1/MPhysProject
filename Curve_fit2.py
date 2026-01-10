@@ -7,16 +7,19 @@ from libs import main_functions as mf
 import os
 
 # =========================================================
-# USER SWITCHES
+# USER SWITCHES (any combination)
 # =========================================================
-FIT_POPULATION = True      # <-- MASTER SWITCH
-delta_f = 1.09              # fixed frequency offset (GHz)
+FIT_POPULATION = True
+FIT_ISOTOPE_SHIFTS = True
+FIT_DELTA_F = False
+
+# Default used only when FIT_DELTA_F = False
+delta_f_fixed = 1.1106  # GHz
 
 # =========================================================
 # WORKING DIRECTORY
 # =========================================================
-#os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
-os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
 # =========================================================
@@ -55,11 +58,14 @@ trans = np.array(transmissions["Transmission3"])
 transerr = np.array(transmissions["Transmission3err"])
 
 # =========================================================
-# FREQUENCY CALIBRATION (NO OFFSET)
+# FREQUENCY CALIBRATION
 # =========================================================
 c = 2.99792458e8
 lambd = 328.1629601
-freq_base = -freq_raw * 2 + (c / lambd)
+
+div = c/lambd
+
+freq_base = div - (2 * freq_raw)
 
 freqerr = 0.01
 freqerr_array = np.full_like(freq_base, freqerr)
@@ -78,17 +84,9 @@ exp_transmission = trans / baseline
 exp_error = np.abs(transerr / baseline)
 
 # =========================================================
-# MODEL WITH POPULATION FITTING
+# MODEL HELPERS
 # =========================================================
-def theory_model_with_pop(exp_detuning, Temp, AgNumberDensity,
-                          a, shift107, shift109):
-
-    if not (0.0 <= a <= 1.0):
-        return np.ones_like(exp_detuning)
-
-    b = (1.0 - a) / 3.0
-    custpop = [a, b, b, b]
-
+def make_pdict(Temp, AgNumberDensity, custpop=None, shifts=None):
     p_dict = {
         'Elem': element,
         'Dline': Dline,
@@ -98,64 +96,82 @@ def theory_model_with_pop(exp_detuning, Temp, AgNumberDensity,
         'Btheta': Btheta,
         'AgNumden': AgNumberDensity,
         'Isotope_Combination': 0,
-        'CustomPop': custpop,
-        'AgIsotope_shift': (shift107, shift109)
+        'CustomPop': custpop,  # None -> default Boltzmann in FreqStren
     }
+    if shifts is not None:
+        p_dict['AgIsotope_shift'] = shifts
+    # If shifts is None, ElecSus uses p_dict_defaults['AgIsotope_shift']
+    return p_dict
+
+def model(exp_detuning, Temp, AgNumberDensity, *extra):
+    """
+    Parameter order after (Temp, AgNumberDensity):
+      [a] [shift107, shift109] [delta_f]
+    depending on which FIT_* switches are True.
+    """
+    idx = 0
+
+    # ---- population ----
+    custpop = None
+    if FIT_POPULATION:
+        a = extra[idx]; idx += 1
+        if not (0.0 <= a <= 1.0):
+            return np.ones_like(exp_detuning)
+        b = (1.0 - a) / 3.0
+        custpop = [a, b, b, b]
+
+    # ---- isotope shifts ----
+    shifts = None
+    if FIT_ISOTOPE_SHIFTS:
+        shift107 = extra[idx]; shift109 = extra[idx + 1]
+        shifts = (shift107, shift109)
+        idx += 2
+
+    # ---- delta_f (GHz) ----
+    if FIT_DELTA_F:
+        delta_f = extra[idx]
+        idx += 1
+    else:
+        delta_f = delta_f_fixed
+
+    p_dict = make_pdict(Temp, AgNumberDensity, custpop=custpop, shifts=shifts)
 
     [S0] = mf.get_spectra(Detuning, E_in, p_dict, outputs=['S0'])
     theory_curve = S0[0].real
-    theory_detuning = Detuning / 1e3
+    theory_detuning = Detuning / 1e3  # GHz
 
+    # delta_f is applied on the experimental x-axis (GHz)
     return np.interp(exp_detuning + delta_f, theory_detuning, theory_curve)
 
 # =========================================================
-# MODEL WITHOUT POPULATION FITTING
+# BUILD p0 AND bounds CONSISTENTLY WITH SWITCHES
 # =========================================================
-def theory_model_no_pop(exp_detuning, Temp, AgNumberDensity,
-                        shift107, shift109):
+p0 = [90, 1.5e16]
+lower = [0, 1e15]
+upper = [2000, 5e16]
 
-    p_dict = {
-        'Elem': element,
-        'Dline': Dline,
-        'T': Temp,
-        'lcell': lcell,
-        'Bfield': Bfield,
-        'Btheta': Btheta,
-        'AgNumden': AgNumberDensity,
-        'Isotope_Combination': 0,
-        'CustomPop': None,  # <-- CRITICAL
-        'AgIsotope_shift': (shift107, shift109)
-    }
-
-    [S0] = mf.get_spectra(Detuning, E_in, p_dict, outputs=['S0'])
-    theory_curve = S0[0].real
-    theory_detuning = Detuning / 1e3
-
-    return np.interp(exp_detuning + delta_f, theory_detuning, theory_curve)
-
-# =========================================================
-# SELECT MODEL AND FIT SETTINGS
-# =========================================================
 if FIT_POPULATION:
-    fit_model = theory_model_with_pop
-    p0 = [90, 1.5e16, 0.4, 229.24, -246.76]
-    bounds = (
-        [20, 1e15, 0.0,  -1000, -1000],
-        [200, 5e16, 1.0,   1000,  1000]
-    )
-else:
-    fit_model = theory_model_no_pop
-    p0 = [90, 1.5e16, 229.24, -246.76]
-    bounds = (
-        [20, 1e15, -1000, -1000],
-        [200, 5e16,  1000,  1000]
-    )
+    p0 += [0.4]
+    lower += [0.0]
+    upper += [1.0]
+
+if FIT_ISOTOPE_SHIFTS:
+    p0 += [229.24, -246.76]      # MHz
+    lower += [-10000, -10000]
+    upper += [10000, 10000]
+
+if FIT_DELTA_F:
+    p0 += [delta_f_fixed]        # GHz initial guess
+    lower += [-5.0]              # widen/narrow as sensible for your scan/calibration
+    upper += [5.0]
+
+bounds = (lower, upper)
 
 # =========================================================
 # PERFORM FIT
 # =========================================================
 popt, pcov = curve_fit(
-    fit_model,
+    model,
     exp_detuning,
     exp_transmission,
     sigma=exp_error,
@@ -163,35 +179,57 @@ popt, pcov = curve_fit(
     p0=p0,
     bounds=bounds
 )
-
-# =========================================================
-# UNPACK RESULTS
-# =========================================================
-if FIT_POPULATION:
-    Temp_fit, N_fit, a_fit, is107_fit, is109_fit = popt
-else:
-    Temp_fit, N_fit, is107_fit, is109_fit = popt
-    a_fit = None
-
 errs = np.sqrt(np.diag(pcov))
 
-print("===== FIT RESULTS =====")
-print(f"T = {Temp_fit:.2f} ± {errs[0]:.2f} °C")
-print(f"N = {N_fit:.3e} ± {errs[1]:.3e}")
-if FIT_POPULATION:
-    print(f"a = {a_fit:.3f} ± {errs[2]:.3f}")
-    i0 = 3
-else:
-    i0 = 2
+# =========================================================
+# UNPACK RESULTS (in the same order)
+# =========================================================
+Temp_fit, N_fit = popt[0], popt[1]
+Temp_err, N_err = errs[0], errs[1]
 
-print(f"107 shift (MHz) = {is107_fit:.2f} ± {errs[i0]:.2f}")
-print(f"109 shift (MHz) = {is109_fit:.2f} ± {errs[i0+1]:.2f}")
-print(f"Isotope shift (MHz) = {is107_fit - is109_fit:.2f}")
+k = 2
+a_fit = a_err = None
+shift107_fit = shift107_err = None
+shift109_fit = shift109_err = None
+delta_f_fit = delta_f_err = None
+
+if FIT_POPULATION:
+    a_fit, a_err = popt[k], errs[k]
+    k += 1
+
+if FIT_ISOTOPE_SHIFTS:
+    shift107_fit, shift107_err = popt[k], errs[k]
+    shift109_fit, shift109_err = popt[k+1], errs[k+1]
+    k += 2
+
+if FIT_DELTA_F:
+    delta_f_fit, delta_f_err = popt[k], errs[k]
+    k += 1
+else:
+    delta_f_fit, delta_f_err = delta_f_fixed, 0.0
+
+print("===== FIT RESULTS =====")
+print(f"T = {Temp_fit:.2f} ± {Temp_err:.2f} °C")
+print(f"N = {N_fit:.3e} ± {N_err:.3e}")
+
+if FIT_POPULATION:
+    print(f"a = {a_fit:.3f} ± {a_err:.3f}")
+else:
+    print("a = fixed (default Boltzmann populations)")
+
+if FIT_ISOTOPE_SHIFTS:
+    print(f"107 shift (MHz) = {shift107_fit:.2f} ± {shift107_err:.2f}")
+    print(f"109 shift (MHz) = {shift109_fit:.2f} ± {shift109_err:.2f}")
+    print(f"Isotope separation (MHz) = {shift107_fit - shift109_fit:.2f}")
+else:
+    print("Isotope shifts = fixed (ElecSus defaults)")
+
+print(f"delta_f (GHz) = {delta_f_fit:.4f} ± {delta_f_err:.4f}")
 
 # =========================================================
 # FIT CURVE & RESIDUALS
 # =========================================================
-fit_curve = fit_model(exp_detuning, *popt)
+fit_curve = model(exp_detuning, *popt)
 residuals = (exp_transmission - fit_curve) / exp_error
 
 # =========================================================

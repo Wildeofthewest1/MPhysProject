@@ -5,8 +5,8 @@ from libs import main_functions as mf
 from matplotlib import rcParams
 
 import os
-#os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
-os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+#os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
 
@@ -34,7 +34,7 @@ E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,E
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
 
-fitresults = (130.23, 1.679e+16, 0.45, 267.99, 246.76)
+fitresults = (130.23, 1.679e+16, 0.45, 267.99, -246.76)
 
 #Temp = 200.00#147.53
 #AgNumberDensity = 1.671e+16#1.678e+16

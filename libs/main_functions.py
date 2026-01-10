@@ -30,7 +30,7 @@ p_dict_defaults = {	'Elem':'Rb', 'Dline':'D2',
 							'Rb85frac':72.17, 'K40frac':0.01, 'K41frac':6.73,'Ag107frac':51.839,
 							'BoltzmannFactor':True, 'AgNumden': 3e15, 'Isotope_Combination': 0,
 							'CustomPop' : None,
-							'AgIsotope_shift': (229.24,-246.76)}
+							'AgIsotope_shift': (ac.Ag107_D2.IsotopeShift,ac.Ag109_D2.IsotopeShift)}
 
 def FreqStren(groundLevels, excitedLevels, groundDim, excitedDim,
               Dline, hand, BoltzmannFactor=True, T=293.16, tol_MHz=1.0,
@@ -541,7 +541,7 @@ def calc_chi(X, p_dict,verbose=False):
 			)
 		if Ag109frac != 0.0:
 			Ag109atom = ac.Ag109
-			Ag109_ES = ht.Hamiltonian('Ag109', Dline, 1.0, Bfield)
+			Ag109_ES = ht.Hamiltonian('Ag109', Dline, 1.0, Bfield, AgIsotopeShift)
 
 			lenergy109, lstrength109, ltransno109 = FreqStren(
 				Ag109_ES.groundManifold,
