@@ -22,9 +22,13 @@ rcParams['ytick.minor.size'] = 2
 os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
 print("Now running in:", os.getcwd())
 
-mode = 2
+mode = 1
 normalTransmission = True
 normalTransmission = False
+
+saveNewScaleFactorMean = False
+k_mean_global = None
+
 if mode == 2:
 
 	import json
@@ -905,7 +909,7 @@ if focus_distance is None:
 	else:
 		plt.xlabel("Distance (mm)")
 	plt.ylabel("Radius (mm)")
-	plt.title("Radial Intensity Profiles Heatmap")
+	#plt.title("Radial Intensity Profiles Heatmap")
 
 	ax = plt.gca()
 	if mode == 2:
@@ -921,6 +925,8 @@ if focus_distance is None:
 
 	if mode == 2:
 		plt.ylim([0,1.4])
+	else:
+		plt.ylim([0,1.8])
 
 	if save_all_plots:
 		if mode == 0:
