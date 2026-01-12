@@ -43,8 +43,8 @@ choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
 fitresults = (149.982, 1.69656e+16, 0.450258, 229.24, -246.76, 1.11171, 0.314955, 0.00146153)
 fitresultsErrors = (3.59048, 2.69753e-12, 0.00155848, 0, 0, 0.00222233, 0.000414683, 0.000101566)
 
-fitresults = (149.982, 1.69656e+16, None, 229.24, -246.76, 1.11171, 0.314955, 0.00146153)
-fitresultsErrors = (3.59048, 2.69753e-12, 0.00155848, 0, 0, 0.00222233, 0.000414683, 0.000101566)
+#fitresults = (149.982, 1.69656e+16, None, 229.24, -246.76, 1.11171, 0.314955, 0.00146153)
+#fitresultsErrors = (3.59048, 2.69753e-12, 0.00155848, 0, 0, 0.00222233, 0.000414683, 0.000101566)
 
 #fitresults = (402.255, 1.46035e+16, None, 229.24, -246.76, 1.04713, 0.314955, 0.00146153)
 #fitresultsErrors = (3.7081, 6.15048e-13, 0, 0, 0, 0.00257602, 0, 0)
@@ -229,7 +229,7 @@ for i in range(len(S0)-1):
 
 	ax_main.plot(theory_detuning, S0[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
 	idx = np.argmin(S0[i].real)
-	ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	#ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
 
 for i in range(len(S0_1)-1):
 	if len(S0_1) >= 7:
@@ -239,10 +239,69 @@ for i in range(len(S0_1)-1):
 
 	ax_main.plot(theory_detuning, S0_1[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
 	idx = np.argmin(S0_1[i].real)
-	ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	#ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
 
-ax_main.plot(theory_detuning, theory_curve, color="grey", linewidth=1.5, label="Theory (Total)")
+
 ax_main.fill_between(theory_detuning, theory_curve, 1, color="lightgrey", alpha=0.5)
+
+#plot theory curve and fill
+
+#############################################################################################################
+
+#np.savez("theory_spectrum3.npz",theory_detuning_saved=theory_detuning,theory_curve_saved=theory_curve)
+
+# Load saved theory
+dataload = np.load("theory_spectrum.npz")
+#dataload = np.load("theory_spectrum2.npz")
+x2 = dataload["theory_detuning_saved"]
+y2 = dataload["theory_curve_saved"]
+
+# Assume your other curve is already in memory:
+# x1 = theory_detuning
+# y1 = theory_curve
+x1 = theory_detuning
+y1 = theory_curve
+
+# Ensure x arrays are increasing (np.interp requires ascending x)
+if x1[0] > x1[-1]:
+    x1 = x1[::-1]
+    y1 = y1[::-1]
+
+if x2[0] > x2[-1]:
+    x2 = x2[::-1]
+    y2 = y2[::-1]
+
+# Define a common x grid over the overlapping region
+xmin = max(x1.min(), x2.min())
+xmax = min(x1.max(), x2.max())
+
+mask1 = (x1 >= xmin) & (x1 <= xmax)
+x_common = x1[mask1]  # use x1 spacing in overlap
+
+# Interpolate y2 onto x_common
+y2_interp = np.interp(x_common, x2, y2)
+
+# Also get y1 on x_common (already aligned because we used x1[mask1])
+y1_common = y1[mask1]
+
+# Plot curves
+#ax_main.plot(x1, y1, color="grey", linewidth=1.5, label="Theory (Total)")
+#ax_main.plot(x2, y2, color="#b22222", linestyle = "--", linewidth=1, label="Theory (Total) loaded")
+
+# Fill between them
+ax_main.fill_between(
+    x_common,
+    y1_common,
+    y2_interp,
+    color="#b22222",
+    alpha=0.25,
+    label="Difference band"
+)
+
+##################################################################################################
+
+ax_main.plot(theory_detuning, theory_curve, color="#1f4ed8"   # deep royal blue
+, linewidth=2, label="Theory (Total)")
 
 # Experimental data (NOW baseline-normalised using b0,b1)
 ax_main.errorbar(
@@ -271,7 +330,7 @@ ax_main.text(x=3.9, y=0.32-0.05,
 #			 fontsize=fontsz-5, ha="right", va="center")
 
 ax_main.set_ylabel("Transmission")
-ax_main.set_ylim([0.2, 1.1])
+ax_main.set_ylim([0.15, 1.1])
 ax_main.set_xlim([-3, 4])
 
 ###########################################################
@@ -296,6 +355,6 @@ ax_res.set_xlabel("Linear Detuning (GHz)")
 
 plt.subplots_adjust(hspace=0.05)
 
-#plt.savefig("FitGood.png", dpi=600, bbox_inches='tight')
+#plt.savefig("FinalFig111.png", dpi=600, bbox_inches='tight')
 
 plt.show()
