@@ -470,7 +470,7 @@ y2_err = np.sqrt(y2_err**2 + (angle_unc * y2)**2)
 # --------------------------------------------------------
 # Add % uncertainty due to beam power fluctuations
 # --------------------------------------------------------
-power_frac = 0.01   # 1 percent
+power_frac = 0.00   # 0 percent
 
 y1_err = np.sqrt(y1_err**2 + (power_frac * y1)**2)
 y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)

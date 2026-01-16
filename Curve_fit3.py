@@ -9,14 +9,17 @@ import os
 # =========================================================
 # USER SWITCHES (any combination)
 # =========================================================
-FIT_POPULATION   = False   # fit 'a'
-FIT_ISOTOPE      = True  # fit (shift107, shift109); if False -> use library defaults
-FIT_DELTA_F      = False  # fit global detuning offset delta_f (GHz)
-FIT_BASELINE     = False#True   # fit baseline polynomial multiplicatively
+FIT_POPULATION   = False  # fit 'a'
+FIT_ISOTOPE      = False  # fit (shift107, shift109); if False -> use library defaults
+FIT_DELTA_F      = True  # fit global detuning offset delta_f (GHz)
+FIT_BASELINE     = False  # fit baseline polynomial multiplicatively
+
+Ag107ShiftDefault = 0.0
+Ag109ShiftDefault = -0.0
 
 BASELINE_ORDER   = 1      # 0=constant, 1=linear, 2=quadratic
 
-delta_f_fixed = 1.11171      # GHz, only used if FIT_DELTA_F=False
+delta_f_fixed = 0#1.11171      # GHz, only used if FIT_DELTA_F=False
 
 FITRESULT_ORDER = [
     'Temp',
@@ -31,8 +34,8 @@ FITRESULT_ORDER = [
 # BASELINE DEFAULTS (used when FIT_BASELINE = False)
 # =========================================================
 BASELINE_DEFAULTS = {
-    'b0': 0.314955,
-    'b1': 0.00146153,
+    'b0': 0.314427,
+    'b1': 0.00135486,
 }
 
 # =========================================================
@@ -72,8 +75,22 @@ Btheta  = 0
 frequencies    = pd.read_csv("frequencies3.csv")
 transmissions  = pd.read_csv("transmission3.csv")
 
+def sort_by_frequency_descending(frequency, transmission):
+    if len(frequency) != len(transmission):
+        raise ValueError("frequency and transmission must have the same length")
+
+    # Zip, sort by frequency descending, and unzip
+    paired = sorted(zip(frequency, transmission), key=lambda x: x[0], reverse=True)
+    freq_sorted, trans_sorted = map(list, zip(*paired))
+
+    return np.array(freq_sorted), np.array(trans_sorted)
+
+
 freq_raw = np.array(frequencies["freq3"])
 trans    = np.array(transmissions["Transmission3"])
+
+freq_raw, trans = sort_by_frequency_descending(freq_raw, trans)
+
 transerr = np.array(transmissions["Transmission3err"])
 
 # =========================================================
@@ -151,6 +168,7 @@ def _baseline_poly(x, coeffs):
 # =========================================================
 # MODEL BUILDER
 # =========================================================
+
 def build_model():
     param_names = ['Temp', 'AgNumberDensity']
 
@@ -169,8 +187,8 @@ def build_model():
     if FIT_POPULATION:
         p0 += [0.4]
     if FIT_ISOTOPE:
-        p0 += [DEFAULT_SHIFT107 if np.isfinite(DEFAULT_SHIFT107) else 229.24,
-               DEFAULT_SHIFT109 if np.isfinite(DEFAULT_SHIFT109) else -246.76]
+        p0 += [DEFAULT_SHIFT107 if np.isfinite(DEFAULT_SHIFT107) else Ag107ShiftDefault,#229.24,
+               DEFAULT_SHIFT109 if np.isfinite(DEFAULT_SHIFT109) else Ag109ShiftDefault]#-246.76]
     if FIT_DELTA_F:
         p0 += [delta_f_fixed]
     if FIT_BASELINE:
@@ -552,6 +570,8 @@ ax_res.errorbar(
 )
 ax_res.set_ylabel("Residuals (normalised)")
 ax_res.set_xlabel("Linear Detuning (GHz)")
+
+#ax_res.label()
 
 plt.subplots_adjust(hspace=0.05)
 plt.show()
