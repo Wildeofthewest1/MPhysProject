@@ -41,7 +41,9 @@ BASELINE_DEFAULTS = {
 # =========================================================
 # WORKING DIRECTORY
 # =========================================================
-os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+os.chdir(r"OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+#os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+#os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
 # =========================================================
@@ -117,7 +119,8 @@ x  = exp_detuning - x0
 # This makes the "DEFAULT" printout explicit.
 try:
     # your defaults live inside mf (same module you imported)
-    DEFAULT_SHIFT107, DEFAULT_SHIFT109 = mf.p_dict_defaults['AgIsotope_shift']
+    DEFAULT_SHIFT107, DEFAULT_SHIFT109 = Ag107ShiftDefault, Ag109ShiftDefault
+    #mf.p_dict_defaults['AgIsotope_shift']
 except Exception:
     DEFAULT_SHIFT107, DEFAULT_SHIFT109 = (np.nan, np.nan)  # fallback
 
@@ -232,6 +235,9 @@ def build_model():
         if FIT_ISOTOPE:
             shift107 = params[idx]; shift109 = params[idx+1]
             idx += 2
+        else:
+            shift107 = Ag107ShiftDefault,
+            shift109 = Ag109ShiftDefault
 
         delta_f = delta_f_fixed
         if FIT_DELTA_F:
