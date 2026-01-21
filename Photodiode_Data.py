@@ -423,6 +423,7 @@ for i in range(0, len(files)):
 		background2 = (avg2, avg2err)
 		print("doneeee")
 
+
 averages1_means = np.array([m for (m, e) in averages1])
 averages1_errs  = np.array([e for (m, e) in averages1])
 
@@ -466,6 +467,23 @@ y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
 
 y1_err = np.sqrt(averages1_errs**2 + background1_err**2)# + )
 y2_err = np.sqrt(averages2_errs**2 + background2_err**2)# + )
+
+powers = ((238.1-0.179),
+		  (522-0.237),
+		  (119.8-0.231),
+		  (26.01-0.232),
+		  (1.273-0.225))
+
+powers1 = ((238.1-0.179),
+		   (238.1-0.179),
+		  (522-0.237),
+		  (522-0.237),
+		  (119.8-0.231),
+		  (119.8-0.231),
+		  (26.01-0.232),
+		  (26.01-0.232),
+		  (1.273-0.225),
+		  (1.273-0.225))
 
 angle_unc = 0.165/100
 
@@ -529,6 +547,12 @@ transmission_err = np.abs(transmission) * np.sqrt(
     (y1_err / y1)**2 +
     (y2_err / y2)**2
 )
+
+plt.errorbar( powers1, transmission, transmission_err, marker = ".", linestyle = "", label = "wf{}, Ch1".format(i))
+#plt.plot( powers1, y2, marker = ".", linestyle = "", label = "wf{}, Ch2".format(i))
+
+plt.legend()
+plt.show()
 
 ######## save to csv
 
