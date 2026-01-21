@@ -363,7 +363,7 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = 4
+first = 5
 
 if first == 0:
 	folder = "SilverSpecFirst/"
@@ -375,6 +375,8 @@ elif first == 3:
 	folder = "TEEMP/"
 elif first == 4:
 	folder = "SilverSpecThird/"
+elif first == 5:
+	folder = "WeakProbeFirst/"
 
 base_path = "Photodiode_Data/" + folder
 
@@ -434,28 +436,30 @@ background2_mean, background2_err = background2
 # Convert to arrays and subtract background
 # ----------------------------------------------------
 
-import pandas as pd
-frequencies = pd.read_csv("frequencies1.csv")
-frequencies2 = pd.read_csv("frequencies2.csv")
-frequencies3 = pd.read_csv("frequencies3.csv")
-frequencies4 = pd.read_csv("times.csv")["freq4"]
-times = np.array(pd.read_csv("times.csv")["times"])/60
+if first != 5:
 
-xs1 = np.linspace(1, 4, len(files)-1)
-xs2 = np.linspace(0, len(files)-2, len(files)-1)
+	import pandas as pd
+	frequencies = pd.read_csv("frequencies1.csv")
+	frequencies2 = pd.read_csv("frequencies2.csv")
+	frequencies3 = pd.read_csv("frequencies3.csv")
+	frequencies4 = pd.read_csv("times.csv")["freq4"]
+	times = np.array(pd.read_csv("times.csv")["times"])/60
 
-print(times)
+	xs1 = np.linspace(1, 4, len(files)-1)
+	xs2 = np.linspace(0, len(files)-2, len(files)-1)
 
-if first == 0:
-	xs = -np.array(frequencies)*2 + (c / (328.1629601))# - 633
-elif first == 1:
-	xs = -np.array(frequencies2)*2 + (c / (328.1629601))# - 633
-elif first == 2:
-	xs = xs2
-elif first == 3:
-	xs = times
-elif first == 4:
-	xs = -np.array(frequencies3)*2 + (c / (328.1629601))# - 633
+	print(times)
+
+	if first == 0:
+		xs = -np.array(frequencies)*2 + (c / (328.1629601))# - 633
+	elif first == 1:
+		xs = -np.array(frequencies2)*2 + (c / (328.1629601))# - 633
+	elif first == 2:
+		xs = xs2
+	elif first == 3:
+		xs = times
+	elif first == 4:
+		xs = -np.array(frequencies3)*2 + (c / (328.1629601))# - 633
 
 y1 = np.abs(np.abs(averages1_means) - np.abs(background1_mean))
 y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -477,42 +481,45 @@ y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)
 
 #print(y1,y2)
 
-# ----------------------------------------------------
-# Remove region for fitting
-# ----------------------------------------------------
-exclude = (xs1 > 2.0) & (xs1 < 3.5)
-mask = ~exclude
+if first != 5:
 
-# Linear fit to CH1
-coeffs1 = np.polyfit(xs1[mask], y1[mask], 1)
-m1, c1 = coeffs1
-fit_line1 = np.polyval(coeffs1, xs1)
+	# ----------------------------------------------------
+	# Remove region for fitting
+	# ----------------------------------------------------
+	exclude = (xs1 > 2.0) & (xs1 < 3.5)
+	mask = ~exclude
 
-# ----------------------------------------------------
-# Plot original + fit
-# ----------------------------------------------------
+	# Linear fit to CH1
+	coeffs1 = np.polyfit(xs1[mask], y1[mask], 1)
+	m1, c1 = coeffs1
+	fit_line1 = np.polyval(coeffs1, xs1)
 
-"""
-print(y1)
+	# ----------------------------------------------------
+	# Plot original + fit
+	# ----------------------------------------------------
 
-if first == 2:
-	plt.errorbar(xs2, y1, yerr = y1_err, marker="o", label="CH1 data")
-	plt.xlabel("Time (Mins)")
-	plt.ylabel("CH1 Signal (V)")
-else:
-	plt.plot(xs1, fit_line1, '--', label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}")
-	plt.errorbar(xs1, y1, yerr = y1_err, marker="o", label="CH1 data")
-	plt.errorbar(xs1, y2, yerr = y2_err, marker="o", label="CH2 data")
-	plt.legend()
-	plt.xlabel("Voltage (GHz)")
-	plt.ylabel("Signal (V)")
+	"""
+	print(y1)
 
-if first == 0:
-	plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
-elif first == 1:
-	plt.savefig("Photodiode_Plot2", dpi=300, bbox_inches='tight')
-plt.show()
-"""
+	if first == 2:
+		plt.errorbar(xs2, y1, yerr = y1_err, marker="o", label="CH1 data")
+		plt.xlabel("Time (Mins)")
+		plt.ylabel("CH1 Signal (V)")
+	else:
+		plt.plot(xs1, fit_line1, '--', label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}")
+		plt.errorbar(xs1, y1, yerr = y1_err, marker="o", label="CH1 data")
+		plt.errorbar(xs1, y2, yerr = y2_err, marker="o", label="CH2 data")
+		plt.legend()
+		plt.xlabel("Voltage (GHz)")
+		plt.ylabel("Signal (V)")
+
+	if first == 0:
+		plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
+	elif first == 1:
+		plt.savefig("Photodiode_Plot2", dpi=300, bbox_inches='tight')
+	plt.show()
+	"""
+
 # ----------------------------------------------------
 # Transmission and uncertainty propagation
 # ----------------------------------------------------
@@ -543,11 +550,17 @@ elif first == 4:
 	"Transmission3err": transmission_err,
 	})
 	df.to_csv("transmission3.csv", index=False)
+elif first == 5:
+	df = pd.DataFrame({
+	"Transmission": transmission,
+	"Transmissionerr": transmission_err,
+	})
+	df.to_csv("WeakProbeTransmissions.csv", index=False)
 ######## save to csv
 
-print(len(transmission),len(xs))
+print(len(transmission))#,len(xs))
 
-if first != 2 and first != 3:
+if first != 2 and first != 3 and first != 5:
 	print(np.max(transmission))
 	print(np.min(transmission))
 	plt.errorbar(xs, transmission/np.max(transmission),
@@ -569,6 +582,15 @@ elif first == 3:
 	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 	plt.xlabel("Time (Minutes)")
 	plt.ylabel("Transmission")
+elif first == 5:
+	print(np.max(transmission))
+	print(np.min(transmission))
+	#plt.errorbar(xs, transmission/np.max(transmission),yerr=np.abs(transmission_err/np.max(transmission)),marker='o')
+	
+	#plt.ylim(0,1.1)
+	#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+	#plt.xlabel("Time (Minutes)")
+	#plt.ylabel("Transmission")
 else:
 	transmission = transmission/0.3301348605312241
 	transmission_err = transmission_err/0.3301348605312241
@@ -582,17 +604,19 @@ else:
 	plt.xlabel("Time (Minutes)")
 	plt.ylabel("On resonance Transmission")
 
-plt.tight_layout()
 
-if first == 0:
-	plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
-elif first == 1:
-	plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
-elif first == 2:
-	plt.savefig("TransmissionTime", dpi=300, bbox_inches='tight')
+if first != 5:
+	plt.tight_layout()
 
-if first < 2:
-	plt.ylim([0, 1.1])
-	plt.xlim([-8.5,8.5])
+	if first == 0:
+		plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
+	elif first == 1:
+		plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
+	elif first == 2:
+		plt.savefig("TransmissionTime", dpi=300, bbox_inches='tight')
 
-plt.show()
+	if first < 2:
+		plt.ylim([0, 1.1])
+		plt.xlim([-8.5,8.5])
+
+	plt.show()
