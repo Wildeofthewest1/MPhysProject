@@ -22,7 +22,8 @@ rcParams['ytick.minor.size'] = 2
 # ----------------------------------------------------
 # Configuration
 # ----------------------------------------------------
-os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+#os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
 print("Now running in:", os.getcwd())
 
 c = 2.99792458e8
@@ -363,7 +364,7 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = 5
+first = 6
 
 if first == 0:
 	folder = "SilverSpecFirst/"
@@ -377,6 +378,8 @@ elif first == 4:
 	folder = "SilverSpecThird/"
 elif first == 5:
 	folder = "WeakProbeFirst/"
+elif first == 6:
+	folder = "SILVERRWPQ/"
 
 base_path = "Photodiode_Data/" + folder
 
@@ -437,7 +440,7 @@ background2_mean, background2_err = background2
 # Convert to arrays and subtract background
 # ----------------------------------------------------
 
-if first != 5:
+if first < 5:
 
 	import pandas as pd
 	frequencies = pd.read_csv("frequencies1.csv")
@@ -499,7 +502,7 @@ y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)
 
 #print(y1,y2)
 
-if first != 5:
+if first < 5:
 
 	# ----------------------------------------------------
 	# Remove region for fitting
@@ -548,11 +551,11 @@ transmission_err = np.abs(transmission) * np.sqrt(
     (y2_err / y2)**2
 )
 
-plt.errorbar( powers1, transmission, transmission_err, marker = ".", linestyle = "", label = "wf{}, Ch1".format(i))
+#plt.errorbar( powers1, transmission, transmission_err, marker = ".", linestyle = "", label = "wf{}, Ch1".format(i))
 #plt.plot( powers1, y2, marker = ".", linestyle = "", label = "wf{}, Ch2".format(i))
 
-plt.legend()
-plt.show()
+#plt.legend()
+#plt.show()
 
 ######## save to csv
 
@@ -580,11 +583,19 @@ elif first == 5:
 	"Transmissionerr": transmission_err,
 	})
 	df.to_csv("WeakProbeTransmissions.csv", index=False)
+elif first == 6:
+	df = pd.DataFrame({
+	"Transmission": transmission,
+	"Transmissionerr": transmission_err,
+	})
+	df.to_csv("WeakProbeTransmissions2.csv", index=False)
 ######## save to csv
+
+print("saved to csv")
 
 print(len(transmission))#,len(xs))
 
-if first != 2 and first != 3 and first != 5:
+if first == 1 or first == 4:
 	print(np.max(transmission))
 	print(np.min(transmission))
 	plt.errorbar(xs, transmission/np.max(transmission),
@@ -606,7 +617,7 @@ elif first == 3:
 	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 	plt.xlabel("Time (Minutes)")
 	plt.ylabel("Transmission")
-elif first == 5:
+elif first >= 5:
 	print(np.max(transmission))
 	print(np.min(transmission))
 	#plt.errorbar(xs, transmission/np.max(transmission),yerr=np.abs(transmission_err/np.max(transmission)),marker='o')
@@ -629,7 +640,7 @@ else:
 	plt.ylabel("On resonance Transmission")
 
 
-if first != 5:
+if first < 5:
 	plt.tight_layout()
 
 	if first == 0:
