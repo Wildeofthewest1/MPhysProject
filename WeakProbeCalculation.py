@@ -22,15 +22,21 @@ rcParams['ytick.minor.size'] = 2
 # ----------------------------------------------------
 # Configuration
 # ----------------------------------------------------
-#os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
-os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+#os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
 print("Now running in:", os.getcwd())
 
 c = 2.99792458e8
 
-transmissionss = pd.read_csv("WeakProbeTransmissions2.csv")
+
+#4 and 5 didn't work
+measurement = 5
+pointIndex = 19
+
+transmissionss = pd.read_csv("WeakProbeTransmissions{}.csv".format(measurement + 1))
 
 transmissions = np.array(transmissionss["Transmission"])
+transmissions_errors = np.array(transmissionss["Transmissionerr"])
 
 powers = ((238.1-0.179),
 		  (522-0.237),
@@ -38,28 +44,40 @@ powers = ((238.1-0.179),
 		  (26.01-0.232),
 		  (1.273-0.225))
 
-powers2 = ((1.036-0.184),
-           (14.10-0.196),
-           (63.4-0.184),
-           (167.8-0.183),
-           (355-0.181),
-           (453-0.179))
+powers2 = ((398-0.214),
+           (195.8-0.193),
+           (93.5-0.210),
+           (25.45-0.217),
+           (5.33-0.206),
+           (1.429-0.199),
+           (1-0.1),
+           (1-0.1),
+           (1-0.1))
 
 print(transmissions)
 
-#newArray = []
-#for i in range(len(transmissions)):
-   # if not i%2:
-    #    newArray.append(transmissions[i]/transmissions[i+1])
-        #print("")
+newArray = []
+for i in range(len(transmissions)):
+    if i >= 21:
+        newArray.append((transmissions[i],transmissions_errors[i]))
+newArray = np.array(newArray)
 
-#print(newArray)
+meanOffres = np.mean(newArray[:,0])
+meanOffres_error = np.sqrt(np.sum(newArray[:,1]**2))/len(newArray)
+
+print(meanOffres,meanOffres_error)
 
 #plt.plot(powers2,newArray)
 
-plt.plot(np.arange(0,len(transmissions),1),transmissions)
+plt.plot(np.arange(0,len(transmissions),1),transmissions/meanOffres)
 
-plt.xlabel("Power")
+result = transmissions[pointIndex]/meanOffres
+result_error = result * np.sqrt((transmissions_errors[pointIndex]/transmissions[pointIndex])**2+(meanOffres_error/meanOffres)**2)
+
+print("power = {} microwatts".format(powers2[measurement-1]))
+print("transmission = {} +/- {}".format(result,result_error))
+
+plt.xlabel("Datapoint")
 
 plt.ylabel("Transmission")
 

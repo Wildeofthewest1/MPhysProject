@@ -22,8 +22,8 @@ rcParams['ytick.minor.size'] = 2
 # ----------------------------------------------------
 # Configuration
 # ----------------------------------------------------
-#os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
-os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+#os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
 print("Now running in:", os.getcwd())
 
 c = 2.99792458e8
@@ -364,7 +364,7 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = 6
+first = 11
 
 if first == 0:
 	folder = "SilverSpecFirst/"
@@ -379,7 +379,17 @@ elif first == 4:
 elif first == 5:
 	folder = "WeakProbeFirst/"
 elif first == 6:
-	folder = "SILVERRWPQ/"
+	folder = "SILVERRWPQ/M1/"
+elif first == 7:
+	folder = "SILVERRWPQ/M2/"
+elif first == 8:
+	folder = "SILVERRWPQ/M3/"
+elif first == 9:
+	folder = "SILVERRWPQ/M4/"
+elif first == 10:
+	folder = "SILVERRWPQ/M5/"
+elif first == 11:
+	folder = "SILVERRWPQ/M6/"
 
 base_path = "Photodiode_Data/" + folder
 
@@ -583,12 +593,12 @@ elif first == 5:
 	"Transmissionerr": transmission_err,
 	})
 	df.to_csv("WeakProbeTransmissions.csv", index=False)
-elif first == 6:
+elif first >= 6:
 	df = pd.DataFrame({
 	"Transmission": transmission,
 	"Transmissionerr": transmission_err,
 	})
-	df.to_csv("WeakProbeTransmissions2.csv", index=False)
+	df.to_csv("WeakProbeTransmissions{}.csv".format(first-4), index=False)
 ######## save to csv
 
 print("saved to csv")
