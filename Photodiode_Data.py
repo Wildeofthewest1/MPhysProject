@@ -364,7 +364,7 @@ def load_tektronix_csv(filename):
 
 import glob
 
-first = 11
+first = 22
 
 if first == 0:
 	folder = "SilverSpecFirst/"
@@ -390,6 +390,28 @@ elif first == 10:
 	folder = "SILVERRWPQ/M5/"
 elif first == 11:
 	folder = "SILVERRWPQ/M6/"
+elif first == 12:
+	folder = "SILVERRWPQ/M7/"
+elif first == 13:
+	folder = "SILVERRWPQ/M8/"
+elif first == 14:
+	folder = "SILVERWEAKPROBENEW/M1/"
+elif first == 15:
+	folder = "SILVERWEAKPROBENEW/M2/"
+elif first == 16:
+	folder = "SILVERWEAKPROBENEW/M3/"
+elif first == 17:
+	folder = "SILVERWEAKPROBENEW/M4/"
+elif first == 18:
+	folder = "SILVERWEAKPROBENEW/M5/"
+elif first == 19:
+	folder = "SILVERWEAKPROBENEW/M6/"
+elif first == 20:
+	folder = "SILVERWEAKPROBENEW/M7/"
+elif first == 21:
+	folder = "SILVERWEAKPROBENEW/M8/"
+elif first == 22:
+	folder = "SILVERWEAKPROBENEW/M9/"
 
 base_path = "Photodiode_Data/" + folder
 

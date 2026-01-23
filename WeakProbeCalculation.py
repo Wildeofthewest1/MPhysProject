@@ -28,57 +28,74 @@ print("Now running in:", os.getcwd())
 
 c = 2.99792458e8
 
+#4 and 6 didn't work
+for j in range(9,18):
 
-#4 and 5 didn't work
-measurement = 5
-pointIndex = 19
+    if j == 4 or j == 6:
+        continue
 
-transmissionss = pd.read_csv("WeakProbeTransmissions{}.csv".format(measurement + 1))
+    measurement = j
+    pointIndex = 20
 
-transmissions = np.array(transmissionss["Transmission"])
-transmissions_errors = np.array(transmissionss["Transmissionerr"])
+    transmissionss = pd.read_csv("WeakProbeTransmissions{}.csv".format(measurement + 1))
 
-powers = ((238.1-0.179),
-		  (522-0.237),
-		  (119.8-0.231),
-		  (26.01-0.232),
-		  (1.273-0.225))
+    transmissions = np.array(transmissionss["Transmission"])
+    transmissions_errors = np.array(transmissionss["Transmissionerr"])
 
-powers2 = ((398-0.214),
-           (195.8-0.193),
-           (93.5-0.210),
-           (25.45-0.217),
-           (5.33-0.206),
-           (1.429-0.199),
-           (1-0.1),
-           (1-0.1),
-           (1-0.1))
+    powers = ((238.1-0.179),
+            (522-0.237),
+            (119.8-0.231),
+            (26.01-0.232),
+            (1.273-0.225))
 
-print(transmissions)
+    powers2 = ((398-0.214),
+            (195.8-0.193),
+            (93.5-0.210),
+            (25.45-0.217),
+            (5.33-0.206),
+            (1.429-0.199),
+            (15.33-0.177),
+            (1.334-0.212),
+            (1.141-0.219),
+            (6.72-0.216),
+            (10.33-0.217),
+            (16.76-0.207),
+            (3.38-0.205),
+            (32.11-0.214),
+            (71.8-0.214),
+            (371-0.199),
+            (142.5-0.210))
 
-newArray = []
-for i in range(len(transmissions)):
-    if i >= 21:
-        newArray.append((transmissions[i],transmissions_errors[i]))
-newArray = np.array(newArray)
+    print(transmissions)
 
-meanOffres = np.mean(newArray[:,0])
-meanOffres_error = np.sqrt(np.sum(newArray[:,1]**2))/len(newArray)
+    newArray = []
+    for i in range(len(transmissions)):
+        if i >= 31:
+            newArray.append((transmissions[i],transmissions_errors[i]))
+    newArray = np.array(newArray)
 
-print(meanOffres,meanOffres_error)
+    meanOffres = np.mean(newArray[:,0])
+    meanOffres_error = np.sqrt(np.sum(newArray[:,1]**2))/len(newArray)
 
-#plt.plot(powers2,newArray)
+    print(meanOffres,meanOffres_error)
 
-plt.plot(np.arange(0,len(transmissions),1),transmissions/meanOffres)
+    #plt.plot(powers2,newArray)
 
-result = transmissions[pointIndex]/meanOffres
-result_error = result * np.sqrt((transmissions_errors[pointIndex]/transmissions[pointIndex])**2+(meanOffres_error/meanOffres)**2)
+    results = transmissions/meanOffres
+    results_error = results * np.sqrt((transmissions_errors/transmissions)**2+(meanOffres_error/meanOffres)**2)
 
-print("power = {} microwatts".format(powers2[measurement-1]))
-print("transmission = {} +/- {}".format(result,result_error))
+    plt.errorbar(np.arange(0,len(transmissions),1),results, yerr = results_error*10, label = "Power = {} microwatts".format(powers2[j-1]))
+
+    result = results[pointIndex]
+    result_error = results_error[pointIndex]
+
+    print("power = {} microwatts".format(powers2[measurement-1]))
+    print("transmission = {} +/- {}".format(result,result_error))
 
 plt.xlabel("Datapoint")
 
 plt.ylabel("Transmission")
+
+plt.legend()
 
 plt.show()
