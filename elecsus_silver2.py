@@ -5,8 +5,8 @@ from libs import main_functions as mf
 from matplotlib import rcParams
 
 import os
-os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
-#os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+#os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
 
@@ -44,9 +44,10 @@ fitresults = (149.982, 1.69656e+16, 0.450258, 229.24, -246.76, 1.11171, 0.314955
 
 fitresults = (149.982, 1.69656e+16, None, 0, -500, 1.11171, 0.314955, 0.00146153)
 
-
 fitresultsErrors = (3.59048, 2.69753e-12, 0.00155848, 0, 0, 0.00222233, 0.000414683, 0.000101566)
 
+fitresults = (233.009, 1.65191e+16, 0.427007, 0, -0, 1.09942, 0.31512, 0.00140447)    
+fitresultsErrors = (11.8845, 9.4676e-12, 0.00520905, 0, 0, 0.00846909, 0.00103746, 0.000214019)
 #fitresults = (149.982, 1.69656e+16, None, 229.24, -246.76, 1.11171, 0.314955, 0.00146153)
 #fitresultsErrors = (3.59048, 2.69753e-12, 0.00155848, 0, 0, 0.00222233, 0.000414683, 0.000101566)
 

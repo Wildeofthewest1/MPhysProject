@@ -11,7 +11,7 @@ import os
 # =========================================================
 FIT_POPULATION   = True  # fit 'a'
 FIT_ISOTOPE      = False#True  # fit (shift107, shift109); if False -> use library defaults
-FIT_DELTA_F      = True  # fit global detuning offset delta_f (GHz)
+FIT_DELTA_F      =  True  # fit global detuning offset delta_f (GHz)
 FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
 
 Ag107ShiftDefault = 0.0
