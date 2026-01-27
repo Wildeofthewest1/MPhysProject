@@ -9,10 +9,10 @@ import os
 # =========================================================
 # USER SWITCHES (any combination)
 # =========================================================
-FIT_POPULATION   = False  # fit 'a'
-FIT_ISOTOPE      = False  # fit (shift107, shift109); if False -> use library defaults
+FIT_POPULATION   = True  # fit 'a'
+FIT_ISOTOPE      = False#True  # fit (shift107, shift109); if False -> use library defaults
 FIT_DELTA_F      = True  # fit global detuning offset delta_f (GHz)
-FIT_BASELINE     = False  # fit baseline polynomial multiplicatively
+FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
 
 Ag107ShiftDefault = 0.0
 Ag109ShiftDefault = -0.0
@@ -581,3 +581,30 @@ ax_res.set_xlabel("Linear Detuning (GHz)")
 
 plt.subplots_adjust(hspace=0.05)
 plt.show()
+
+# ---------------------------------------------------------
+# Coverage check: fraction within ±1 sigma (target ~ 0.68)
+# ---------------------------------------------------------
+res = residuals_norm
+res = res[np.isfinite(res)]
+
+within_1 = np.mean(np.abs(res) <= 1.0)
+within_2 = np.mean(np.abs(res) <= 2.0)
+within_3 = np.mean(np.abs(res) <= 3.0)
+
+N = res.size
+print("\n===== RESIDUAL COVERAGE CHECK =====")
+print(f"N points = {N}")
+print(f"Fraction with |residual| <= 1σ : {within_1:.3f}  (expected ~0.683 for Gaussian)")
+print(f"Fraction with |residual| <= 2σ : {within_2:.3f}  (expected ~0.954 for Gaussian)")
+print(f"Fraction with |residual| <= 3σ : {within_3:.3f}  (expected ~0.997 for Gaussian)")
+
+# Optional: also report reduced chi^2 for consistency
+chi2_red = np.mean(res**2)  # since reduced chi^2 = (1/N) sum r_i^2 if no fitted dof correction
+print(f"Mean(residual^2) (≈ reduced χ² if dof ignored) : {chi2_red:.3f}")
+
+import scipy.stats as stats
+
+ks = stats.kstest(residuals_norm, 'norm')
+print("\nKS test vs N(0,1):")
+print(f"D = {ks.statistic:.3f},  p-value = {ks.pvalue:.3f}")

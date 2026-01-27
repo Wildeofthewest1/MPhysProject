@@ -22,8 +22,8 @@ rcParams['ytick.minor.size'] = 2
 # ----------------------------------------------------
 # Configuration
 # ----------------------------------------------------
-os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
-#os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+#os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
 print("Now running in:", os.getcwd())
 
 c = 2.99792458e8
@@ -117,13 +117,13 @@ frequencies2 = (456775.401,
 
 
 df = pd.DataFrame({
-    "freq1": frequencies,
+	"freq1": frequencies,
 })
 
 df.to_csv("frequencies1.csv", index=False)
 
 df = pd.DataFrame({
-    "freq2": frequencies2
+	"freq2": frequencies2
 })
 
 df.to_csv("frequencies2.csv", index=False)
@@ -278,7 +278,7 @@ frequencies3 = (456778.966,
 				456769.286)
 
 df = pd.DataFrame({
-    "freq3": frequencies3
+	"freq3": frequencies3
 })
 
 df.to_csv("frequencies3.csv", index=False)
@@ -330,7 +330,7 @@ times = (15,
 frequencies4 = times#()
 
 df = pd.DataFrame({
-    "times": times,
+	"times": times,
 	"freq4": frequencies4
 })
 
@@ -362,328 +362,470 @@ def load_tektronix_csv(filename):
 
 	return t, ch1, ch2
 
+def effective_sample_size(x):
+	x = np.asarray(x, float)
+	x = x - np.mean(x)
+	n = len(x)
+	# autocorrelation via FFT
+	f = np.fft.rfft(x, n=2*n)
+	acf = np.fft.irfft(f*np.conj(f))[:n]
+	acf /= acf[0]
+	# integrated autocorrelation time (truncate when acf < 0)
+	positive = acf[1:] > 0
+	if not np.any(positive):
+		return n
+	m = np.argmax(~positive) + 1 if np.any(~positive) else n
+	tau_int = 1 + 2*np.sum(acf[1:m])
+	print("effective size = "+str(n/tau_int))
+	return n / tau_int
+
+def mean_ratio_with_bg_uncertainty(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err,
+	n_mc=5000, seed=0, guard_den=1e-12,
+	bootstrap=False):
+	"""
+	T = mean( (|ch1|-bg1) / (|ch2|-bg2) )
+	Uncertainty includes background mean uncertainties via Monte Carlo.
+	If bootstrap=True, also includes finite-sample waveform uncertainty.
+	"""
+	rng = np.random.default_rng(seed)
+
+	x = np.abs(ch1_arr).astype(float)
+	y = np.abs(ch2_arr).astype(float)
+	N = len(x)
+	idx = np.arange(N)
+
+	# nominal
+	denom0 = y - bg2
+	m0 = np.abs(denom0) > guard_den
+	r0 = (x[m0] - bg1) / denom0[m0]
+	T_nom = np.mean(r0)
+	se_stat = np.std(r0, ddof=1) / np.sqrt(effective_sample_size(r0))
+
+	# MC over backgrounds (+ optional bootstrap)
+	bg1_s = rng.normal(bg1, bg1_err, size=n_mc)
+	bg2_s = rng.normal(bg2, bg2_err, size=n_mc)
+
+	T_samp = np.empty(n_mc, float)
+	for m in range(n_mc):
+		if bootstrap:
+			ii = rng.choice(idx, size=N, replace=True)
+			xx = x[ii]
+			yy = y[ii]
+		else:
+			xx = x
+			yy = y
+
+		denom = yy - bg2_s[m]
+		mask = np.abs(denom) > guard_den
+		rr = (xx[mask] - bg1_s[m]) / denom[mask]
+		T_samp[m] = np.mean(rr)
+		#print("loading "+str(100*m/n_mc)+"%")
+
+	T_hat = np.mean(T_samp)
+	#se_total = np.std(T_samp, ddof=1)
+	print("-----")
+	se_bg = np.std(T_samp, ddof=1)
+	se_tot = np.sqrt(se_stat**2 + se_bg**2)
+	return T_hat, se_tot, se_stat#, se_bg
+
+def block_mean(a, block_size):
+    a = np.asarray(a, float)
+    n = len(a) // block_size
+    a = a[:n*block_size]
+    return a.reshape(n, block_size).mean(axis=1)
+
+def transmission_mc_fast(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err,
+                         block_size=500, n_mc=1000, seed=0, guard_frac=0.01):
+    rng = np.random.default_rng(seed)
+
+    x = block_mean(np.abs(ch1_arr), block_size)
+    y = block_mean(np.abs(ch2_arr), block_size)
+
+    denom0 = y - bg2
+    scale = np.median(np.abs(denom0))
+    guard = max(1e-12, guard_frac * scale)
+    mask0 = np.abs(denom0) > guard
+
+    r0 = (x[mask0] - bg1) / (y[mask0] - bg2)
+    T = np.mean(r0)
+    se_stat = np.std(r0, ddof=1) / np.sqrt(len(r0))  # blocks ~independent
+
+    # MC over backgrounds (cheap now: len(x) ~ few hundred)
+    bg1_s = rng.normal(bg1, bg1_err, size=n_mc)
+    bg2_s = rng.normal(bg2, bg2_err, size=n_mc)
+
+    # vectorised: shape (n_mc, n_blocks)
+    denom = (y[mask0][None, :] - bg2_s[:, None])
+    numer = (x[mask0][None, :] - bg1_s[:, None])
+
+    # avoid rare near-zero denom in draws
+    good = np.abs(denom) > guard
+    ratio = np.where(good, numer / denom, np.nan)
+    T_samp = np.nanmean(ratio, axis=1)
+
+    se_bg = np.nanstd(T_samp, ddof=1)
+    se_tot = np.sqrt(se_stat**2 + se_bg**2)
+
+    return T, se_tot, se_stat, se_bg, len(r0)
 import glob
-
-first = 22
-
-if first == 0:
-	folder = "SilverSpecFirst/"
-elif first == 1:
-	folder = "SilverSpecSecond/"
-elif first == 2:
-	folder = "VoltageTime/"
-elif first == 3:
-	folder = "TEEMP/"
-elif first == 4:
-	folder = "SilverSpecThird/"
-elif first == 5:
-	folder = "WeakProbeFirst/"
-elif first == 6:
-	folder = "SILVERRWPQ/M1/"
-elif first == 7:
-	folder = "SILVERRWPQ/M2/"
-elif first == 8:
-	folder = "SILVERRWPQ/M3/"
-elif first == 9:
-	folder = "SILVERRWPQ/M4/"
-elif first == 10:
-	folder = "SILVERRWPQ/M5/"
-elif first == 11:
-	folder = "SILVERRWPQ/M6/"
-elif first == 12:
-	folder = "SILVERRWPQ/M7/"
-elif first == 13:
-	folder = "SILVERRWPQ/M8/"
-elif first == 14:
-	folder = "SILVERWEAKPROBENEW/M1/"
-elif first == 15:
-	folder = "SILVERWEAKPROBENEW/M2/"
-elif first == 16:
-	folder = "SILVERWEAKPROBENEW/M3/"
-elif first == 17:
-	folder = "SILVERWEAKPROBENEW/M4/"
-elif first == 18:
-	folder = "SILVERWEAKPROBENEW/M5/"
-elif first == 19:
-	folder = "SILVERWEAKPROBENEW/M6/"
-elif first == 20:
-	folder = "SILVERWEAKPROBENEW/M7/"
-elif first == 21:
-	folder = "SILVERWEAKPROBENEW/M8/"
-elif first == 22:
-	folder = "SILVERWEAKPROBENEW/M9/"
-
-base_path = "Photodiode_Data/" + folder
-
-files = sorted(glob.glob(base_path + "tek*ALL.csv"))
-
-print("Found files:", len(files))
-#print(files)
-
-power = 1.2e-6  # 1.2 µW in W
-
-averages1 = []
-averages2 = []
-background1 = 0.0
-background2 = 0.0
-
-# ----------------------------------------------------
-# Load all datasets
-# ----------------------------------------------------
-for i in range(0, len(files)):
-
-	print(i)
-	#print("Loading index:", i)
-
-	path = "ALL" + str(i).zfill(4) + "/A" + str(i).zfill(4) + "/"
-
-	# Single Tektronix CSV containing TIME, CH1, CH2
-	file_csv = base_path + "tek" + str(i).zfill(4) + "ALL.csv"
-
-	# Load data
-	t, ch1_arr, ch2_arr = load_tektronix_csv(file_csv)
-
-	# Compute averages
-	avg1 = np.mean(ch1_arr)
-	avg2 = np.mean(ch2_arr)
-	
-	avg1err = np.std(ch1_arr)/np.sqrt(len(ch1_arr))
-	avg2err = np.std(ch2_arr)/np.sqrt(len(ch2_arr))
-
-	if i != len(files)-1:
-		averages1.append((avg1, avg1err))
-		averages2.append((avg2, avg2err))
-	else:
-		background1 = (avg1, avg1err)
-		background2 = (avg2, avg2err)
-		print("doneeee")
-
-
-averages1_means = np.array([m for (m, e) in averages1])
-averages1_errs  = np.array([e for (m, e) in averages1])
-
-averages2_means = np.array([m for (m, e) in averages2])
-averages2_errs  = np.array([e for (m, e) in averages2])
-
-background1_mean, background1_err = background1
-background2_mean, background2_err = background2
-
-# ----------------------------------------------------
-# Convert to arrays and subtract background
-# ----------------------------------------------------
-
-if first < 5:
-
-	import pandas as pd
-	frequencies = pd.read_csv("frequencies1.csv")
-	frequencies2 = pd.read_csv("frequencies2.csv")
-	frequencies3 = pd.read_csv("frequencies3.csv")
-	frequencies4 = pd.read_csv("times.csv")["freq4"]
-	times = np.array(pd.read_csv("times.csv")["times"])/60
-
-	xs1 = np.linspace(1, 4, len(files)-1)
-	xs2 = np.linspace(0, len(files)-2, len(files)-1)
-
-	print(times)
+#14-22
+for k in range(0,23):
+	print(k)
+	first = k
 
 	if first == 0:
-		xs = -np.array(frequencies)*2 + (c / (328.1629601))# - 633
+		folder = "SilverSpecFirst/"
 	elif first == 1:
-		xs = -np.array(frequencies2)*2 + (c / (328.1629601))# - 633
+		folder = "SilverSpecSecond/"
 	elif first == 2:
-		xs = xs2
+		folder = "VoltageTime/"
 	elif first == 3:
-		xs = times
+		folder = "TEEMP/"
 	elif first == 4:
-		xs = -np.array(frequencies3)*2 + (c / (328.1629601))# - 633
+		folder = "SilverSpecThird/"
+	elif first == 5:
+		folder = "WeakProbeFirst/"
+	elif first == 6:
+		folder = "SILVERRWPQ/M1/"
+	elif first == 7:
+		folder = "SILVERRWPQ/M2/"
+	elif first == 8:
+		folder = "SILVERRWPQ/M3/"
+	elif first == 9:
+		folder = "SILVERRWPQ/M4/"
+	elif first == 10:
+		folder = "SILVERRWPQ/M5/"
+	elif first == 11:
+		folder = "SILVERRWPQ/M6/"
+	elif first == 12:
+		folder = "SILVERRWPQ/M7/"
+	elif first == 13:
+		folder = "SILVERRWPQ/M8/"
+	elif first == 14:
+		folder = "SILVERWEAKPROBENEW/M1/"
+	elif first == 15:
+		folder = "SILVERWEAKPROBENEW/M2/"
+	elif first == 16:
+		folder = "SILVERWEAKPROBENEW/M3/"
+	elif first == 17:
+		folder = "SILVERWEAKPROBENEW/M4/"
+	elif first == 18:
+		folder = "SILVERWEAKPROBENEW/M5/"
+	elif first == 19:
+		folder = "SILVERWEAKPROBENEW/M6/"
+	elif first == 20:
+		folder = "SILVERWEAKPROBENEW/M7/"
+	elif first == 21:
+		folder = "SILVERWEAKPROBENEW/M8/"
+	elif first == 22:
+		folder = "SILVERWEAKPROBENEW/M9/"
 
-y1 = np.abs(np.abs(averages1_means) - np.abs(background1_mean))
-y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
+	base_path = "Photodiode_Data/" + folder
 
-y1_err = np.sqrt(averages1_errs**2 + background1_err**2)# + )
-y2_err = np.sqrt(averages2_errs**2 + background2_err**2)# + )
+	files = sorted(glob.glob(base_path + "tek*ALL.csv"))
 
-powers = ((238.1-0.179),
-		  (522-0.237),
-		  (119.8-0.231),
-		  (26.01-0.232),
-		  (1.273-0.225))
+	print("Found files:", len(files))
+	#print(files)
 
-powers1 = ((238.1-0.179),
-		   (238.1-0.179),
-		  (522-0.237),
-		  (522-0.237),
-		  (119.8-0.231),
-		  (119.8-0.231),
-		  (26.01-0.232),
-		  (26.01-0.232),
-		  (1.273-0.225),
-		  (1.273-0.225))
+	power = 1.2e-6  # 1.2 µW in W
 
-angle_unc = 0.165/100
-
-y2_err = np.sqrt(y2_err**2 + (angle_unc * y2)**2)
-
-# --------------------------------------------------------
-# Add % uncertainty due to beam power fluctuations
-# --------------------------------------------------------
-power_frac = 0.00   # 0 percent
-
-y1_err = np.sqrt(y1_err**2 + (power_frac * y1)**2)
-y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)
-
-#print(y1,y2)
-
-if first < 5:
+	averages1 = []
+	averages2 = []
+	background1 = 0.0
+	background2 = 0.0
 
 	# ----------------------------------------------------
-	# Remove region for fitting
+	# Load all datasets
 	# ----------------------------------------------------
-	exclude = (xs1 > 2.0) & (xs1 < 3.5)
-	mask = ~exclude
+	bg_index = len(files)-1
+	file_csvbg = base_path + "tek" + str(bg_index).zfill(4) + "ALL.csv"
+	t_, ch1_arr_, ch2_arr_ = load_tektronix_csv(file_csvbg)
+	
+	bg1 = np.mean(np.abs(ch1_arr_))
+	bg2 = np.mean(np.abs(ch2_arr_))
+	bg1_error = np.std(np.abs(ch1_arr_), ddof=1) / np.sqrt(effective_sample_size(ch1_arr_))
+	bg2_error = np.std(np.abs(ch2_arr_), ddof=1) / np.sqrt(effective_sample_size(ch2_arr_))
 
-	# Linear fit to CH1
-	coeffs1 = np.polyfit(xs1[mask], y1[mask], 1)
-	m1, c1 = coeffs1
-	fit_line1 = np.polyval(coeffs1, xs1)
+	def chunked_sem(x, n_chunks=20):
+		x = np.asarray(x, float)
+		chunks = np.array_split(x, n_chunks)
+		means = np.array([np.mean(c) for c in chunks])
+		return np.std(means, ddof=1)  # this is a drift-like scale
+
+	#bg1_error = chunked_sem(np.abs(ch1_arr_))
+	#bg2_error = chunked_sem(np.abs(ch2_arr_))
+
+
+	for i in range(0, len(files)-1):
+		print("file "+str(i)+"/"+str(len(files)))
+		# Single Tektronix CSV containing TIME, CH1, CH2
+		file_csv = base_path + "tek" + str(i).zfill(4) + "ALL.csv"
+
+		# Load data
+		t, ch1_arr, ch2_arr = load_tektronix_csv(file_csv)
+
+		T, T_err, T_err_stat, T_err_bg, nblocks = transmission_mc_fast(
+			ch1_arr, ch2_arr,
+			bg1, bg1_error,
+			bg2, bg2_error,
+			block_size=500,
+			n_mc=1000,
+			seed=123+i
+		)
+
+		#if i != len(files)-1:
+		averages1.append((T, T_err))
+		#else: print("done")
+
+		#ch3_arr = (np.abs(ch1_arr)-bg1)/(np.abs(ch2_arr)-bg2)
+
+		#avg = np.mean(ch3_arr)
+		#avg_error = np.std(ch3_arr)/np.sqrt(len(ch3_arr))
+
+		# Compute averages
+		#avg1 = np.mean(ch1_arr)
+		#avg2 = np.mean(ch2_arr)
+		
+		#avg1err = np.std(ch1_arr)/np.sqrt(len(ch1_arr))
+		#avg2err = np.std(ch2_arr)/np.sqrt(len(ch2_arr))
+
+		#
+
+		#if i != len(files)-1:
+		#	averages1.append((avg, avg_error))
+			#averages1.append((avg1, avg1err))
+			#averages2.append((avg2, avg2err))
+		#else:
+			#plt.plot(t,ch3_arr)
+			#plt.show()
+			#background1 = ( avg, avg_error)
+			#background1 = (avg1, avg1err)
+			#background2 = (avg2, avg2err)
+		#	print("doneeee")
+
+	averages1_means = np.array([m for (m, e) in averages1])
+	averages1_errs  = np.array([e for (m, e) in averages1])
+
+	#averages2_means = np.array([m for (m, e) in averages2])
+	#averages2_errs  = np.array([e for (m, e) in averages2])
+
+	#background1_mean, background1_err = background1
+	#background2_mean, background2_err = background2
 
 	# ----------------------------------------------------
-	# Plot original + fit
+	# Convert to arrays and subtract background
 	# ----------------------------------------------------
 
-	"""
-	print(y1)
+	if first < 5:
 
-	if first == 2:
-		plt.errorbar(xs2, y1, yerr = y1_err, marker="o", label="CH1 data")
-		plt.xlabel("Time (Mins)")
-		plt.ylabel("CH1 Signal (V)")
+		import pandas as pd
+		frequencies = pd.read_csv("frequencies1.csv")
+		frequencies2 = pd.read_csv("frequencies2.csv")
+		frequencies3 = pd.read_csv("frequencies3.csv")
+		frequencies4 = pd.read_csv("times.csv")["freq4"]
+		times = np.array(pd.read_csv("times.csv")["times"])/60
+
+		xs1 = np.linspace(1, 4, len(files)-1)
+		xs2 = np.linspace(0, len(files)-2, len(files)-1)
+
+		print(times)
+
+		if first == 0:
+			xs = -np.array(frequencies)*2 + (c / (328.1629601))# - 633
+		elif first == 1:
+			xs = -np.array(frequencies2)*2 + (c / (328.1629601))# - 633
+		elif first == 2:
+			xs = xs2
+		elif first == 3:
+			xs = times
+		elif first == 4:
+			xs = -np.array(frequencies3)*2 + (c / (328.1629601))# - 633
+
+	y1 = np.abs(np.abs(averages1_means))# - np.abs(background1_mean))
+	#y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
+
+	y1_err = np.sqrt(averages1_errs**2)# + background1_err**2)# + )
+	#y2_err = np.sqrt(averages2_errs**2 + background2_err**2)# + )
+
+	powers = ((238.1-0.179),
+			(522-0.237),
+			(119.8-0.231),
+			(26.01-0.232),
+			(1.273-0.225))
+
+	powers1 = ((238.1-0.179),
+			(238.1-0.179),
+			(522-0.237),
+			(522-0.237),
+			(119.8-0.231),
+			(119.8-0.231),
+			(26.01-0.232),
+			(26.01-0.232),
+			(1.273-0.225),
+			(1.273-0.225))
+
+	angle_unc = 0.165/100
+
+	#y2_err = np.sqrt(y2_err**2 + (angle_unc * y2)**2)
+
+	# --------------------------------------------------------
+	# Add % uncertainty due to beam power fluctuations
+	# --------------------------------------------------------
+	power_frac = 0.00   # 0 percent
+
+	#y1_err = np.sqrt(y1_err**2 + (power_frac * y1)**2)
+	#y2_err = np.sqrt(y2_err**2 + (power_frac * y2)**2)
+
+	#print(y1,y2)
+
+	if first < 5:
+
+		# ----------------------------------------------------
+		# Remove region for fitting
+		# ----------------------------------------------------
+		exclude = (xs1 > 2.0) & (xs1 < 3.5)
+		mask = ~exclude
+
+		# Linear fit to CH1
+		coeffs1 = np.polyfit(xs1[mask], y1[mask], 1)
+		m1, c1 = coeffs1
+		fit_line1 = np.polyval(coeffs1, xs1)
+
+		# ----------------------------------------------------
+		# Plot original + fit
+		# ----------------------------------------------------
+
+		"""
+		print(y1)
+
+		if first == 2:
+			plt.errorbar(xs2, y1, yerr = y1_err, marker="o", label="CH1 data")
+			plt.xlabel("Time (Mins)")
+			plt.ylabel("CH1 Signal (V)")
+		else:
+			plt.plot(xs1, fit_line1, '--', label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}")
+			plt.errorbar(xs1, y1, yerr = y1_err, marker="o", label="CH1 data")
+			plt.errorbar(xs1, y2, yerr = y2_err, marker="o", label="CH2 data")
+			plt.legend()
+			plt.xlabel("Voltage (GHz)")
+			plt.ylabel("Signal (V)")
+
+		if first == 0:
+			plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
+		elif first == 1:
+			plt.savefig("Photodiode_Plot2", dpi=300, bbox_inches='tight')
+		plt.show()
+		"""
+
+	# ----------------------------------------------------
+	# Transmission and uncertainty propagation
+	# ----------------------------------------------------
+	transmission = y1# / y2
+
+	transmission_err = y1_err
+	#np.abs(transmission)*np.sqrt((y1_err/y1)**2+(y2_err/y2)**2)
+
+	#plt.errorbar( powers1, transmission, transmission_err, marker = ".", linestyle = "", label = "wf{}, Ch1".format(i))
+	#plt.plot( powers1, y2, marker = ".", linestyle = "", label = "wf{}, Ch2".format(i))
+
+	#plt.legend()
+	#plt.show()
+
+	######## save to csv
+
+	if first == 0:
+		df = pd.DataFrame({
+			"Transmission1": transmission,
+			"Transmission1err": transmission_err,
+		})
+		df.to_csv("transmission1.csv", index=False)
+	elif first == 1:
+		df = pd.DataFrame({
+			"Transmission2": transmission,
+			"Transmission2err": transmission_err,
+		})
+		df.to_csv("transmission2.csv", index=False)
+	elif first == 4:
+		df = pd.DataFrame({
+		"Transmission3": transmission,
+		"Transmission3err": transmission_err,
+		})
+		df.to_csv("transmission3.csv", index=False)
+	elif first == 5:
+		df = pd.DataFrame({
+		"Transmission": transmission,
+		"Transmissionerr": transmission_err,
+		})
+		df.to_csv("WeakProbeTransmissions.csv", index=False)
+	elif first >= 6:
+		df = pd.DataFrame({
+		"Transmission": transmission,
+		"Transmissionerr": transmission_err,
+		})
+		df.to_csv("WeakProbeTransmissions{}.csv".format(first-4), index=False)
+	######## save to csv
+
+	print("saved to csv")
+
+	print(len(transmission))#,len(xs))
+
+	if first == 1 or first == 4:
+		print(np.max(transmission))
+		print(np.min(transmission))
+		plt.errorbar(xs, transmission/np.max(transmission),
+					yerr=np.abs(transmission_err/np.max(transmission)),
+					fmt='.')
+		
+		plt.ylim(0,1.1)
+		plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+		plt.xlabel("Detuning (GHz)")
+		plt.ylabel("Transmission")
+	elif first == 3:
+		print(np.max(transmission))
+		print(np.min(transmission))
+		plt.errorbar(xs, transmission/np.max(transmission),
+					yerr=np.abs(transmission_err/np.max(transmission)),
+					marker='o')
+		
+		plt.ylim(0,1.1)
+		plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+		plt.xlabel("Time (Minutes)")
+		plt.ylabel("Transmission")
+	elif first >= 5:
+		print(np.max(transmission))
+		print(np.min(transmission))
+		#plt.errorbar(xs, transmission/np.max(transmission),yerr=np.abs(transmission_err/np.max(transmission)),marker='o')
+		
+		#plt.ylim(0,1.1)
+		#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+		#plt.xlabel("Time (Minutes)")
+		#plt.ylabel("Transmission")
 	else:
-		plt.plot(xs1, fit_line1, '--', label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}")
-		plt.errorbar(xs1, y1, yerr = y1_err, marker="o", label="CH1 data")
-		plt.errorbar(xs1, y2, yerr = y2_err, marker="o", label="CH2 data")
-		plt.legend()
-		plt.xlabel("Voltage (GHz)")
-		plt.ylabel("Signal (V)")
+		transmission = transmission/0.3301348605312241
+		transmission_err = transmission_err/0.3301348605312241
 
-	if first == 0:
-		plt.savefig("Photodiode_Plot", dpi=300, bbox_inches='tight')
-	elif first == 1:
-		plt.savefig("Photodiode_Plot2", dpi=300, bbox_inches='tight')
-	plt.show()
-	"""
-
-# ----------------------------------------------------
-# Transmission and uncertainty propagation
-# ----------------------------------------------------
-transmission = y1 / y2
-
-transmission_err = np.abs(transmission) * np.sqrt(
-    (y1_err / y1)**2 +
-    (y2_err / y2)**2
-)
-
-#plt.errorbar( powers1, transmission, transmission_err, marker = ".", linestyle = "", label = "wf{}, Ch1".format(i))
-#plt.plot( powers1, y2, marker = ".", linestyle = "", label = "wf{}, Ch2".format(i))
-
-#plt.legend()
-#plt.show()
-
-######## save to csv
-
-if first == 0:
-	df = pd.DataFrame({
-		"Transmission1": transmission,
-		"Transmission1err": transmission_err,
-	})
-	df.to_csv("transmission1.csv", index=False)
-elif first == 1:
-	df = pd.DataFrame({
-		"Transmission2": transmission,
-		"Transmission2err": transmission_err,
-	})
-	df.to_csv("transmission2.csv", index=False)
-elif first == 4:
-	df = pd.DataFrame({
-	"Transmission3": transmission,
-	"Transmission3err": transmission_err,
-	})
-	df.to_csv("transmission3.csv", index=False)
-elif first == 5:
-	df = pd.DataFrame({
-	"Transmission": transmission,
-	"Transmissionerr": transmission_err,
-	})
-	df.to_csv("WeakProbeTransmissions.csv", index=False)
-elif first >= 6:
-	df = pd.DataFrame({
-	"Transmission": transmission,
-	"Transmissionerr": transmission_err,
-	})
-	df.to_csv("WeakProbeTransmissions{}.csv".format(first-4), index=False)
-######## save to csv
-
-print("saved to csv")
-
-print(len(transmission))#,len(xs))
-
-if first == 1 or first == 4:
-	print(np.max(transmission))
-	print(np.min(transmission))
-	plt.errorbar(xs, transmission/np.max(transmission),
-				yerr=np.abs(transmission_err/np.max(transmission)),
-				fmt='.')
-	
-	plt.ylim(0,1.1)
-	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-	plt.xlabel("Detuning (GHz)")
-	plt.ylabel("Transmission")
-elif first == 3:
-	print(np.max(transmission))
-	print(np.min(transmission))
-	plt.errorbar(xs, transmission/np.max(transmission),
-				yerr=np.abs(transmission_err/np.max(transmission)),
-				marker='o')
-	
-	plt.ylim(0,1.1)
-	plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-	plt.xlabel("Time (Minutes)")
-	plt.ylabel("Transmission")
-elif first >= 5:
-	print(np.max(transmission))
-	print(np.min(transmission))
-	#plt.errorbar(xs, transmission/np.max(transmission),yerr=np.abs(transmission_err/np.max(transmission)),marker='o')
-	
-	#plt.ylim(0,1.1)
-	#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-	#plt.xlabel("Time (Minutes)")
-	#plt.ylabel("Transmission")
-else:
-	transmission = transmission/0.3301348605312241
-	transmission_err = transmission_err/0.3301348605312241
-
-	plt.errorbar(xs, transmission - np.min(transmission) + (0.08973872980696299/0.3301348605312241),
-				yerr=np.abs(transmission_err),
-				marker='o')
-	#plt.ylim(0,1.1)
-	#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-	plt.xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18])
-	plt.xlabel("Time (Minutes)")
-	plt.ylabel("On resonance Transmission")
+		plt.errorbar(xs, transmission - np.min(transmission) + (0.08973872980696299/0.3301348605312241),
+					yerr=np.abs(transmission_err),
+					marker='o')
+		#plt.ylim(0,1.1)
+		#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+		plt.xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18])
+		plt.xlabel("Time (Minutes)")
+		plt.ylabel("On resonance Transmission")
 
 
-if first < 5:
-	plt.tight_layout()
+	if first < 5:
+		plt.tight_layout()
 
-	if first == 0:
-		plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
-	elif first == 1:
-		plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
-	elif first == 2:
-		plt.savefig("TransmissionTime", dpi=300, bbox_inches='tight')
+		if first == 0:
+			plt.savefig("Photodiode_Transmission", dpi=300, bbox_inches='tight')
+		elif first == 1:
+			plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
+		elif first == 2:
+			plt.savefig("TransmissionTime", dpi=300, bbox_inches='tight')
 
-	if first < 2:
-		plt.ylim([0, 1.1])
-		plt.xlim([-8.5,8.5])
+		if first < 2:
+			plt.ylim([0, 1.1])
+			plt.xlim([-8.5,8.5])
 
-	plt.show()
+		plt.show()
