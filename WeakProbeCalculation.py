@@ -22,8 +22,8 @@ rcParams['ytick.minor.size'] = 2
 # ----------------------------------------------------
 # Configuration
 # ----------------------------------------------------
-#os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
-os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
+#os.chdir(r"C:\\Users\\Matt\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
 print("Now running in:", os.getcwd())
 
 c = 2.99792458e8
@@ -69,7 +69,8 @@ for j in range(9,18):
             (32.11-0.214),
             (71.8-0.214),
             (371-0.199),
-            (142.5-0.210))
+            (142.5-0.210),
+            (30-0.2))
 
     #print(transmissions)
 
