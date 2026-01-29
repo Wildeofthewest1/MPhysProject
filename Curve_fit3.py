@@ -12,10 +12,10 @@ import os
 FIT_POPULATION   = True  # fit 'a'
 FIT_ISOTOPE      = False#True  # fit (shift107, shift109); if False -> use library defaults
 FIT_DELTA_F      =  True  # fit global detuning offset delta_f (GHz)
-FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
+FIT_BASELINE     = False  # fit baseline polynomial multiplicatively
 
-Ag107ShiftDefault = 0.0
-Ag109ShiftDefault = -0.0
+Ag107ShiftDefault = 100#229.24#400#1000.0
+Ag109ShiftDefault = -100#246.76#-Ag107ShiftDefault #0.0
 
 BASELINE_ORDER   = 1      # 0=constant, 1=linear, 2=quadratic
 
@@ -34,16 +34,15 @@ FITRESULT_ORDER = [
 # BASELINE DEFAULTS (used when FIT_BASELINE = False)
 # =========================================================
 BASELINE_DEFAULTS = {
-    'b0': 0.314427,
-    'b1': 0.00135486,
+    'b0': 0.31512,#0.314427,
+    'b1': 0.00140447#0.00135486,
 }
 
 # =========================================================
 # WORKING DIRECTORY
 # =========================================================
-os.chdir(r"OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 #os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
-#os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
 # =========================================================
@@ -74,8 +73,13 @@ Btheta  = 0
 # =========================================================
 # LOAD EXPERIMENTAL DATA
 # =========================================================
+#Old Data
 frequencies    = pd.read_csv("frequencies3.csv")
 transmissions  = pd.read_csv("transmission3.csv")
+
+#New Data
+#requencies    = pd.read_csv("frequencies5.csv")
+#transmissions  = pd.read_csv("Spec30MicroWatts.csv")
 
 def sort_by_frequency_descending(frequency, transmission):
     if len(frequency) != len(transmission):
@@ -88,12 +92,12 @@ def sort_by_frequency_descending(frequency, transmission):
     return np.array(freq_sorted), np.array(trans_sorted)
 
 
-freq_raw = np.array(frequencies["freq3"])
-trans    = np.array(transmissions["Transmission3"])
+freq_raw = np.array(frequencies["freq"])
+trans    = np.array(transmissions["Transmission"])
 
 freq_raw, trans = sort_by_frequency_descending(freq_raw, trans)
 
-transerr = np.array(transmissions["Transmission3err"])
+transerr = np.array(transmissions["Transmissionerr"])
 
 # =========================================================
 # FREQUENCY CALIBRATION (YOUR EXISTING MAPPING)
@@ -580,7 +584,6 @@ ax_res.set_xlabel("Linear Detuning (GHz)")
 #ax_res.label()
 
 plt.subplots_adjust(hspace=0.05)
-plt.show()
 
 # ---------------------------------------------------------
 # Coverage check: fraction within ±1 sigma (target ~ 0.68)
@@ -608,3 +611,7 @@ import scipy.stats as stats
 ks = stats.kstest(residuals_norm, 'norm')
 print("\nKS test vs N(0,1):")
 print(f"D = {ks.statistic:.3f},  p-value = {ks.pvalue:.3f}")
+
+plt.savefig("IsotopeshiftFit_"+str(Ag107ShiftDefault - Ag109ShiftDefault)+"MHz_POP.png", dpi=300, bbox_inches='tight')
+
+plt.show()

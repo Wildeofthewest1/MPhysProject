@@ -29,7 +29,6 @@ print("Now running in:", os.getcwd())
 c = 2.99792458e8
 
 """
-
 frequencies = (456777.182,
 			   456777.031,
 			   456776.861,
@@ -117,20 +116,20 @@ frequencies2 = (456775.401,
 
 
 df = pd.DataFrame({
-	"freq1": frequencies,
+	"freq": frequencies,
 })
 
 df.to_csv("frequencies1.csv", index=False)
 
 df = pd.DataFrame({
-	"freq2": frequencies2
+	"freq": frequencies2
 })
 
 df.to_csv("frequencies2.csv", index=False)
 
-"""
 
-"""
+
+
 frequencies3 = (456778.966,
 				456778.967,
 				456778.884,
@@ -278,7 +277,7 @@ frequencies3 = (456778.966,
 				456769.286)
 
 df = pd.DataFrame({
-	"freq3": frequencies3
+	"freq": frequencies3
 })
 
 df.to_csv("frequencies3.csv", index=False)
@@ -331,13 +330,13 @@ frequencies4 = times#()
 
 df = pd.DataFrame({
 	"times": times,
-	"freq4": frequencies4
+	"freq": frequencies4
 })
 
 df.to_csv("times.csv", index=False)
-"""
 
-"""
+
+
 frequencies5 = (456779.175,
 				456779.167,
 				456779.163,
@@ -983,7 +982,7 @@ def transmission_mc_fast(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err,
     return T, se_tot, se_stat, se_bg, len(r0)
 import glob
 #14-22
-for k in range(-1,0):
+for k in range(-2,-1):
 	print(k)
 	first = k
 
@@ -1140,7 +1139,7 @@ for k in range(-1,0):
 		frequencies = pd.read_csv("frequencies1.csv")
 		frequencies2 = pd.read_csv("frequencies2.csv")
 		frequencies3 = pd.read_csv("frequencies3.csv")
-		frequencies4 = pd.read_csv("times.csv")["freq4"]
+		frequencies4 = pd.read_csv("times.csv")["freq"]
 		times = np.array(pd.read_csv("times.csv")["times"])/60
 		frequencies5 = pd.read_csv("frequencies5.csv")
 
@@ -1268,20 +1267,20 @@ for k in range(-1,0):
 
 	if first == 0:
 		df = pd.DataFrame({
-			"Transmission1": transmission,
-			"Transmission1err": transmission_err,
+			"Transmission": transmission,
+			"Transmissionerr": transmission_err,
 		})
 		df.to_csv("transmission1.csv", index=False)
 	elif first == 1:
 		df = pd.DataFrame({
-			"Transmission2": transmission,
-			"Transmission2err": transmission_err,
+			"Transmission": transmission,
+			"Transmissionerr": transmission_err,
 		})
 		df.to_csv("transmission2.csv", index=False)
 	elif first == 4:
 		df = pd.DataFrame({
-		"Transmission3": transmission,
-		"Transmission3err": transmission_err,
+		"Transmission": transmission,
+		"Transmissionerr": transmission_err,
 		})
 		df.to_csv("transmission3.csv", index=False)
 	elif first == 5:
@@ -1367,6 +1366,12 @@ for k in range(-1,0):
 			plt.savefig("Photodiode_Transmission2", dpi=300, bbox_inches='tight')
 		elif first == 2:
 			plt.savefig("TransmissionTime", dpi=300, bbox_inches='tight')
+		elif first == -1:
+			plt.savefig("30MicWNewData", dpi=300, bbox_inches='tight')
+		elif first == -2:
+			plt.xlabel("Power (Microwatts)")
+			#plt.xscale("log")
+			#plt.savefig("WeakProbe222.png", dpi=300, bbox_inches='tight')
 
 		#if first < 2:
 			#plt.ylim([0, 1.1])

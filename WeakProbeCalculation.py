@@ -69,8 +69,7 @@ for j in range(9,18):
             (32.11-0.214),
             (71.8-0.214),
             (371-0.199),
-            (142.5-0.210),
-            (30-0.2))
+            (142.5-0.210))
 
     #print(transmissions)
 
@@ -121,6 +120,8 @@ plt.xlabel("Datapoint")
 plt.ylabel("Transmission")
 
 plt.legend()
+
+#plt.savefig("WeakProbe111.png", dpi=300, bbox_inches='tight')
 
 plt.show()
 
@@ -210,4 +211,5 @@ plt.xlabel("Power (µW)")
 plt.ylabel("Minimum transmission (from parabola fit)")
 plt.title("Minimum transmission vs power")
 plt.xscale("log")
+#plt.savefig("WeakProbe1112.png", dpi=300, bbox_inches='tight')
 plt.show()
