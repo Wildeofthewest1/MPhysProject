@@ -22,7 +22,7 @@ rcParams['ytick.minor.size'] = 2
 os.chdir(r"C:\\Users\\Alienware\\OneDrive - Durham University\\Level_4_Project\\Lvl_4\\Repo")
 print("Now running in:", os.getcwd())
 
-mode = 1
+mode = 3
 normalTransmission = True
 normalTransmission = False
 
@@ -84,8 +84,8 @@ rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
 rcParams['font.size'] = fontsz
 rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
-focus_distance = None # Only show a certain distance
-plot_main = False
+focus_distance = 75#[0, 25, 50, 75, 100] # Only show a certain distance
+plot_main = True
 #save_all_plots = True
 save_all_plots = False
 
@@ -93,7 +93,7 @@ pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
 photon_energy = h * c / wavelength
 
-p_total = 1.21e-6 #1.02e-6#1.21e-6
+p_total = 1.21e-6/4 #1.02e-6#1.21e-6
 p_total_error = 0.04e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
 
@@ -150,7 +150,7 @@ elif mode == 1:
 	}
 	base_path = "Camera_images_new/"
 	end_path = "_1_8.488.bmp"
-else:
+elif mode == 2:
 	"""
 	beam_images = {
 		0:   {"centre": (740, 543), "exposure": 8.488e-3},
@@ -520,7 +520,34 @@ else:
 	}
 	base_path = "Voltage_Spec_2/"
 	end_path = "_mV_6.107ms_450mm.bmp"
-
+elif mode == 3:
+	beam_images = {
+		0:   {"centre": (570, 790), "exposure": 18.088-3},
+		25:   {"centre": (526, 785), "exposure": 18.088e-3},
+		50:  {"centre": (542, 786), "exposure": 18.088-3},
+		75:  {"centre": (501, 769), "exposure": 18.088e-3},    
+		100: {"centre": (560, 775), "exposure": 18.088e-3},
+		125:   {"centre": (618, 772), "exposure": 18.088e-3},
+		150:  {"centre": (591, 760), "exposure": 18.088e-3},
+		175:  {"centre": (635, 775), "exposure": 18.088e-3}, 
+		200: {"centre": (565, 765), "exposure": 18.088e-3},
+		225:   {"centre": (600, 755), "exposure": 18.088e-3},
+		250:  {"centre": (598, 765), "exposure": 18.088e-3},
+		275:  {"centre": (573, 767), "exposure": 18.088e-3}, 
+		300: {"centre": (575, 758), "exposure": 18.088e-3},
+		325:   {"centre": (562, 766), "exposure": 18.088e-3},
+		350:  {"centre": (572, 768), "exposure": 18.088e-3},
+		375:  {"centre": (507, 753), "exposure": 18.088e-3}, 
+		400: {"centre": (565, 751), "exposure": 18.088e-3},
+		425: {"centre": (521, 753), "exposure": 18.088e-3},
+		450: {"centre": (509, 743), "exposure": 18.088e-3},
+		475: {"centre": (515, 743), "exposure": 18.088e-3},
+		500: {"centre": (558, 752), "exposure": 18.088e-3},
+		525: {"centre": (558, 763), "exposure": 18.088e-3},
+		550: {"centre": (532, 761), "exposure": 18.088e-3},
+	}
+	base_path = "NEWSHAPEBEAMPICS/"
+	end_path = "_18.088ms.bmp"
 default_exposure = 12.097e-3  # s
 exposure_error = 0.001
 allNormal = False
@@ -542,13 +569,19 @@ def round_sig(x, sig=3):
 def process_image(distance, centre=None, exposure=None, normalise=False, input_scale_factor = None):
 	"""Process a single beam image and return all derived quantities."""
 	#path = f"{base_path}{to3string(distance)}_0_12_097ms.bmp"
-	if mode <= 1:
+	if mode != 2:
 		path = f"{base_path}{to3string(distance)}" + end_path
-	else:
+	elif mode==2:
 		path = f"{base_path}{to4string(distance)}" + end_path
 	img = plt.imread(path)
-	if img.ndim == 3:
+
+	if mode ==3:
+		if img.ndim == 3:
+			# plt.imread gives RGB(A). Use red channel only.
+			img = img[:, :, 0]
+	elif img.ndim == 3:
 		img = img.mean(axis=2)
+
 	ny, nx = img.shape
 
 	# exposure handling
@@ -585,7 +618,11 @@ def process_image(distance, centre=None, exposure=None, normalise=False, input_s
 			)
 	
 	if (mode != 2) or (mode == 2 and not normalTransmission):
-		img = img / (exposure * 255) #gives unscaled intensity values to each pixel
+			# If img is float in [0,1], don't divide by 255 again.
+		if img.dtype.kind == "f":
+			img = img / exposure
+		else:
+			img = img / (exposure * 255)
 
 	sf = 1
 
@@ -752,12 +789,26 @@ else:
 
 if plot_main:
 	# --- Decide what to plot ---
-	if focus_distance is not None:
-		# Only plot the chosen distance
-		distances_to_plot = [focus_distance]
+	if focus_distance is None:
+		distances_to_plot = sorted(results.keys())
+
+	elif isinstance(focus_distance, (list, tuple, set, np.ndarray)):
+		# Keep only distances that actually exist in results
+		distances_to_plot = [d for d in focus_distance if d in results]
+		distances_to_plot = sorted(distances_to_plot)
+
+		missing = [d for d in focus_distance if d not in results]
+		if missing:
+			print("Warning: requested focus distances not found:", missing)
+
+		if len(distances_to_plot) == 0:
+			raise ValueError("None of the requested focus_distance values exist in results.")
+
 	else:
-		# Plot all
-		distances_to_plot = list(results.keys())
+		# single value
+		if focus_distance not in results:
+			raise ValueError(f"Requested focus_distance={focus_distance} not found in results.")
+		distances_to_plot = [focus_distance]
 
 	n = len(distances_to_plot)
 	fig, axs = plt.subplots(n, 3, figsize=(12, 3.2 * n))
@@ -846,7 +897,7 @@ if plot_main:
 			plt.savefig(to3string(focus_distance)+"_Plots", dpi=300, bbox_inches='tight')
 		elif mode == 1:
 			plt.savefig(to3string(focus_distance)+"_Plots_new", dpi=300, bbox_inches='tight')
-		else:
+		elif mode ==2:
 			plt.savefig(to3string(focus_distance)+"_Plots_new_spec", dpi=300, bbox_inches='tight')
 		
 
@@ -933,7 +984,7 @@ if focus_distance is None:
 			plt.savefig("I_r_heatmap.png", dpi=300, bbox_inches='tight')
 		elif mode == 1:
 			plt.savefig("I_r_heatmap_new.png", dpi=300, bbox_inches='tight')
-		else:
+		elif mode ==2:
 			plt.savefig("I_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
 
 	plt.show()
@@ -992,7 +1043,7 @@ if focus_distance is None:
 				plt.savefig("I_Ave_r_heatmap.png", dpi=300, bbox_inches='tight')
 			elif mode == 1:
 				plt.savefig("I_Ave_r_heatmap_new.png", dpi=300, bbox_inches='tight')
-			else:
+			elif mode == 2:
 				plt.savefig("I_Ave_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
 
 		plt.show()
@@ -1032,7 +1083,7 @@ if focus_distance is None:
 				plt.savefig("I_max_distance_graph", dpi=300, bbox_inches='tight')
 			elif mode == 1:
 				plt.savefig("I_max_distance_graph_new", dpi=300, bbox_inches='tight')
-			else:
+			elif mode == 2:
 				plt.savefig("I_max_distance_graph_new_spec", dpi=300, bbox_inches='tight')
 		
 		plt.show()
@@ -1197,7 +1248,7 @@ if not (normalTransmission and mode == 2):
 			plt.savefig("I_max_distance_graph_errors", dpi=300, bbox_inches='tight')
 		elif mode == 1:
 			plt.savefig("I_max_distance_graph_errors_new", dpi=300, bbox_inches='tight')
-		else:
+		elif mode == 2:
 			plt.savefig("I_max_distance_graph_errors_new_spec", dpi=300, bbox_inches='tight')
 
 	plt.show()
@@ -1331,7 +1382,7 @@ if save_all_plots:
 		plt.savefig("scaled_power_vs_distance.png", dpi=300, bbox_inches='tight')
 	elif mode == 1:
 		plt.savefig("scaled_power_vs_distance_new.png", dpi=300, bbox_inches='tight')
-	else:
+	elif mode == 2:
 		plt.savefig("P_Pmax_vs_voltage.png", dpi=300, bbox_inches='tight')
 
 plt.show()
