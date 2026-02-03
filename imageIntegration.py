@@ -84,7 +84,7 @@ rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
 rcParams['font.size'] = fontsz
 rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
 
-focus_distance = 75#[0, 25, 50, 75, 100] # Only show a certain distance
+focus_distance = [0, 100, 200, 300, 400, 500] # Only show a certain distance
 plot_main = True
 #save_all_plots = True
 save_all_plots = False
