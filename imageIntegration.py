@@ -893,14 +893,19 @@ if plot_main:
 	plt.subplots_adjust(hspace=0.1, wspace=0.25)
 
 	if focus_distance != None and save_all_plots:
+		if isinstance(focus_distance, (list, tuple, set, np.ndarray)):
+			tag = "_".join(to3string(int(d)) for d in distances_to_plot)
+		else:
+			tag = to3string(int(focus_distance))
 		if mode == 0:
-			plt.savefig(to3string(focus_distance)+"_Plots", dpi=300, bbox_inches='tight')
+			plt.savefig(f"{tag}_Plots", dpi=300, bbox_inches="tight")
 		elif mode == 1:
-			plt.savefig(to3string(focus_distance)+"_Plots_new", dpi=300, bbox_inches='tight')
-		elif mode ==2:
-			plt.savefig(to3string(focus_distance)+"_Plots_new_spec", dpi=300, bbox_inches='tight')
+			plt.savefig(f"{tag}_Plots_new", dpi=300, bbox_inches="tight")
+		elif mode == 2:
+			plt.savefig(f"{tag}_Plots_new_spec", dpi=300, bbox_inches="tight")
+		elif mode == 3:
+			plt.savefig(f"{tag}_Plots_newBeam", dpi=300, bbox_inches="tight")
 		
-
 	plt.show()
 
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  (needed for 3D plotting)
@@ -986,6 +991,8 @@ if focus_distance is None:
 			plt.savefig("I_r_heatmap_new.png", dpi=300, bbox_inches='tight')
 		elif mode ==2:
 			plt.savefig("I_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
+		elif mode ==3:
+			plt.savefig("I_r_heatmap_newBeam.png", dpi=300, bbox_inches='tight')
 
 	plt.show()
 
@@ -1045,6 +1052,8 @@ if focus_distance is None:
 				plt.savefig("I_Ave_r_heatmap_new.png", dpi=300, bbox_inches='tight')
 			elif mode == 2:
 				plt.savefig("I_Ave_r_heatmap_new_spec.png", dpi=300, bbox_inches='tight')
+			elif mode == 3:
+				plt.savefig("I_Ave_r_heatmap_newBeam.png", dpi=300, bbox_inches='tight')
 
 		plt.show()
 
@@ -1085,6 +1094,8 @@ if focus_distance is None:
 				plt.savefig("I_max_distance_graph_new", dpi=300, bbox_inches='tight')
 			elif mode == 2:
 				plt.savefig("I_max_distance_graph_new_spec", dpi=300, bbox_inches='tight')
+			elif mode == 3:
+				plt.savefig("I_max_distance_graph_newBeam.png", dpi=300, bbox_inches='tight')
 		
 		plt.show()
 
@@ -1250,6 +1261,8 @@ if not (normalTransmission and mode == 2):
 			plt.savefig("I_max_distance_graph_errors_new", dpi=300, bbox_inches='tight')
 		elif mode == 2:
 			plt.savefig("I_max_distance_graph_errors_new_spec", dpi=300, bbox_inches='tight')
+		elif mode == 3:
+			plt.savefig("I_max_distance_graph_errors_newBeam", dpi=300, bbox_inches='tight')		
 
 	plt.show()
 
@@ -1384,5 +1397,7 @@ if save_all_plots:
 		plt.savefig("scaled_power_vs_distance_new.png", dpi=300, bbox_inches='tight')
 	elif mode == 2:
 		plt.savefig("P_Pmax_vs_voltage.png", dpi=300, bbox_inches='tight')
+	elif mode == 3:
+		plt.savefig("scaled_power_vs_distance_newBeam.png", dpi=300, bbox_inches='tight')
 
 plt.show()
