@@ -81,6 +81,11 @@ transmissions  = pd.read_csv("transmission3.csv")
 #requencies    = pd.read_csv("frequencies5.csv")
 #transmissions  = pd.read_csv("Spec30MicroWatts.csv")
 
+frequencies    = pd.read_csv("frequencies5.csv")
+transmissions  = pd.read_csv("Spec15MicroWatts.csv")
+
+
+
 def sort_by_frequency_descending(frequency, transmission):
     if len(frequency) != len(transmission):
         raise ValueError("frequency and transmission must have the same length")

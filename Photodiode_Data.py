@@ -853,6 +853,10 @@ powers_ = np.array((1.00, 1.02, 1.02, 1.02, 1.02, 1.00, 1.02, 1.02, 1.01, 1.01, 
 # ----------------------------------------------------
 # Helper: Load Tektronix CSV (TIME, CH1, CH2)
 # ----------------------------------------------------
+
+def standard_error(array):
+	return np.std(array, ddof=1)/np.sqrt(len(array))
+
 def load_tektronix_csv(filename):
 	with open(filename, 'r') as f:
 		lines = f.readlines()
@@ -980,9 +984,28 @@ def transmission_mc_fast(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err,
     se_tot = np.sqrt(se_stat**2 + se_bg**2)
 
     return T, se_tot, se_stat, se_bg, len(r0)
+
+def errorSimple(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err):
+	ch1_mean = np.mean(ch1_arr)
+	ch2_mean = np.mean(ch2_arr)
+	ch1_mean_error = standard_error(ch1_arr)
+	ch2_mean_error = standard_error(ch2_arr)
+
+	ch1NB = ch1_mean - bg1
+	ch2NB = ch2_mean - bg2
+
+	T = ch1NB/ch2NB
+
+	ch1NB_error = np.sqrt(ch1_mean_error**2 + bg1_err**2)
+
+	ch2NB_error = np.sqrt(ch2_mean_error**2 + bg2_err**2)
+
+	T_error = T*np.sqrt((ch1NB_error/ch1NB)**2+(ch2NB_error/ch2NB)**2)
+
+	return T, T_error
 import glob
 #14-22
-for k in range(-2,-1):
+for k in range(-3,-2):
 	print(k)
 	first = k
 
@@ -1036,6 +1059,8 @@ for k in range(-2,-1):
 		folder = "SPEC30MICROWATT/8A/"
 	elif first == -2:
 		folder = "WPWM/"
+	elif first == -3:
+		folder = "Spec15MicrowattNWM/8A/"
 
 	base_path = "Photodiode_Data/" + folder
 
@@ -1058,10 +1083,10 @@ for k in range(-2,-1):
 	file_csvbg = base_path + "tek" + str(bg_index).zfill(4) + "ALL.csv"
 	t_, ch1_arr_, ch2_arr_ = load_tektronix_csv(file_csvbg)
 	
-	bg1 = np.mean(np.abs(ch1_arr_))
-	bg2 = np.mean(np.abs(ch2_arr_))
-	bg1_error = np.std(np.abs(ch1_arr_), ddof=1) / np.sqrt(effective_sample_size(ch1_arr_))
-	bg2_error = np.std(np.abs(ch2_arr_), ddof=1) / np.sqrt(effective_sample_size(ch2_arr_))
+	bg1 = np.mean(ch1_arr_)
+	bg2 = np.mean(ch2_arr_)
+	bg1_error = standard_error(ch1_arr_)#np.std(np.abs(ch1_arr_), ddof=1) / np.sqrt(effective_sample_size(ch1_arr_))
+	bg2_error = standard_error(ch2_arr_)#np.std(np.abs(ch2_arr_), ddof=1) / np.sqrt(effective_sample_size(ch2_arr_))
 
 	def chunked_sem(x, n_chunks=20):
 		x = np.asarray(x, float)
@@ -1081,14 +1106,19 @@ for k in range(-2,-1):
 		# Load data
 		t, ch1_arr, ch2_arr = load_tektronix_csv(file_csv)
 
-		T, T_err, T_err_stat, T_err_bg, nblocks = transmission_mc_fast(
+		#T, T_err, T_err_stat, T_err_bg, nblocks = transmission_mc_fast(\
+		#	ch1_arr, ch2_arr,\
+		#	bg1, bg1_error,\
+		#	bg2, bg2_error,\
+		#	block_size=5000,\
+		#	n_mc=1000,\
+		#	seed=123+i\
+		#)
+
+		T, T_err = errorSimple(
 			ch1_arr, ch2_arr,
 			bg1, bg1_error,
-			bg2, bg2_error,
-			block_size=500,
-			n_mc=1000,
-			seed=123+i
-		)
+			bg2, bg2_error)
 
 		#if i != len(files)-1:
 		averages1.append((T, T_err))
@@ -1172,6 +1202,8 @@ for k in range(-2,-1):
 			27.08-0.173, 27.08-0.173, 27.08-0.173,
 			33.9-0.179, 33.9-0.179, 33.9-0.179 )
 			xs = Pnew
+		elif first == -3:
+			xs = np.linspace(0, 5, len(files)-1)
 
 	y1 = np.abs(np.abs(averages1_means))# - np.abs(background1_mean))
 	#y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -1308,13 +1340,19 @@ for k in range(-2,-1):
 		"Powers": np.array(Pnew)
 		})
 		df.to_csv("WeakProbe2.csv", index=False)
+	elif first == -3:
+		df = pd.DataFrame({
+		"Transmission": transmission,
+		"Transmissionerr": transmission_err,
+		})
+		df.to_csv("Spec15MicroWatts.csv", index=False)
 	######## save to csv
 
 	print("saved to csv")
 
 	print(len(transmission))#,len(xs))
 
-	if first == 1 or first == 4 or first == -1 or first == -2:
+	if first == 1 or first == 4 or first == -1 or first == -2 or first == -3:
 		#print(np.max(transmission))
 		#print(np.min(transmission))
 		plt.errorbar(xs, transmission, yerr=np.abs(transmission_err),fmt='.')#/np.max(transmission))
@@ -1372,7 +1410,8 @@ for k in range(-2,-1):
 			plt.xlabel("Power (Microwatts)")
 			#plt.xscale("log")
 			#plt.savefig("WeakProbe222.png", dpi=300, bbox_inches='tight')
-
+		elif first == -3:
+			plt.savefig("15MicWNewData", dpi=300, bbox_inches='tight')
 		#if first < 2:
 			#plt.ylim([0, 1.1])
 			#plt.xlim([-8.5,8.5])
