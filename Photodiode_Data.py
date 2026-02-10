@@ -855,7 +855,7 @@ powers_ = np.array((1.00, 1.02, 1.02, 1.02, 1.02, 1.00, 1.02, 1.02, 1.01, 1.01, 
 # ----------------------------------------------------
 
 def standard_error(array):
-	return np.std(array, ddof=1)/np.sqrt(len(array))
+	return np.std(array, ddof=1)/np.sqrt(100)#len(array))
 
 def load_tektronix_csv(filename):
 	with open(filename, 'r') as f:
@@ -1005,7 +1005,7 @@ def errorSimple(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err):
 	return T, T_error
 import glob
 #14-22
-for k in range(-3,-2):
+for k in range(-7,-6):
 	print(k)
 	first = k
 
@@ -1061,6 +1061,14 @@ for k in range(-3,-2):
 		folder = "WPWM/"
 	elif first == -3:
 		folder = "Spec15MicrowattNWM/8A/"
+	elif first == -4:
+		folder = "Spec15MicrowattNEW/8A/"
+	elif first == -5:
+		folder = "Spec15MicrowattNEW/6A/"
+	elif first == -6:
+		folder = "Spec15MicrowattNEW/4A/"
+	elif first == -7:
+		folder = "Spec15MicrowattNEW/7A/"
 
 	base_path = "Photodiode_Data/" + folder
 
@@ -1106,19 +1114,16 @@ for k in range(-3,-2):
 		# Load data
 		t, ch1_arr, ch2_arr = load_tektronix_csv(file_csv)
 
-		#T, T_err, T_err_stat, T_err_bg, nblocks = transmission_mc_fast(\
-		#	ch1_arr, ch2_arr,\
-		#	bg1, bg1_error,\
-		#	bg2, bg2_error,\
-		#	block_size=5000,\
-		#	n_mc=1000,\
-		#	seed=123+i\
-		#)
+		T, T_err, T_err_stat, T_err_bg, nblocks = transmission_mc_fast(\
+			ch1_arr, ch2_arr,\
+			bg1, bg1_error,\
+			bg2, bg2_error,\
+			block_size=500,\
+			n_mc=1000,\
+			seed=123+i\
+		)
 
-		T, T_err = errorSimple(
-			ch1_arr, ch2_arr,
-			bg1, bg1_error,
-			bg2, bg2_error)
+		#T, T_err = errorSimple(ch1_arr, ch2_arr,bg1, bg1_error,bg2, bg2_error)
 
 		#if i != len(files)-1:
 		averages1.append((T, T_err))
@@ -1202,8 +1207,14 @@ for k in range(-3,-2):
 			27.08-0.173, 27.08-0.173, 27.08-0.173,
 			33.9-0.179, 33.9-0.179, 33.9-0.179 )
 			xs = Pnew
-		elif first == -3:
+		elif first == -3 or first == -4:
 			xs = np.linspace(0, 5, len(files)-1)
+		elif first == -5 or first == -6 or first == -7:
+			a = np.arange(0,1.8,0.1)
+			b = np.arange(1.8,3.8,0.01)
+			c = np.arange(3.8,5,0.1)
+			xs = np.concatenate((a, b, c))
+			print(xs)
 
 	y1 = np.abs(np.abs(averages1_means))# - np.abs(background1_mean))
 	#y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -1352,7 +1363,7 @@ for k in range(-3,-2):
 
 	print(len(transmission))#,len(xs))
 
-	if first == 1 or first == 4 or first == -1 or first == -2 or first == -3:
+	if first == 1 or first == 4 or first <= -1:
 		#print(np.max(transmission))
 		#print(np.min(transmission))
 		plt.errorbar(xs, transmission, yerr=np.abs(transmission_err),fmt='.')#/np.max(transmission))
