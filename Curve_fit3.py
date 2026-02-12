@@ -12,10 +12,10 @@ import os
 FIT_POPULATION   = True  # fit 'a'
 FIT_ISOTOPE      = False#True  # fit (shift107, shift109); if False -> use library defaults
 FIT_DELTA_F      =  True  # fit global detuning offset delta_f (GHz)
-FIT_BASELINE     = False  # fit baseline polynomial multiplicatively
+FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
 
-Ag107ShiftDefault = 100#229.24#400#1000.0
-Ag109ShiftDefault = -100#246.76#-Ag107ShiftDefault #0.0
+Ag107ShiftDefault = 229.24#400#1000.0
+Ag109ShiftDefault = -246.76#-Ag107ShiftDefault #0.0
 
 BASELINE_ORDER   = 1      # 0=constant, 1=linear, 2=quadratic
 
@@ -80,11 +80,21 @@ transmissions  = pd.read_csv("transmission3.csv")
 #New Data
 #requencies    = pd.read_csv("frequencies5.csv")
 #transmissions  = pd.read_csv("Spec30MicroWatts.csv")
+#frequencies    = pd.read_csv("frequencies5.csv")
+#transmissions  = pd.read_csv("Spec15MicroWatts.csv")
 
-frequencies    = pd.read_csv("frequencies5.csv")
-transmissions  = pd.read_csv("Spec15MicroWatts.csv")
 
+#frequencies    = pd.read_csv("frequencies8A.csv")
+#transmissions  = pd.read_csv("Spec15MicW8A.csv")
 
+frequencies    = pd.read_csv("frequencies6A.csv")
+transmissions  = pd.read_csv("Spec15MicW6A.csv")
+
+#frequencies    = pd.read_csv("frequencies4A.csv")
+#transmissions  = pd.read_csv("Spec15MicW4A.csv")
+
+#frequencies    = pd.read_csv("frequencies7A.csv")
+#transmissions  = pd.read_csv("Spec15MicW7A.csv")
 
 def sort_by_frequency_descending(frequency, transmission):
     if len(frequency) != len(transmission):
@@ -102,7 +112,7 @@ trans    = np.array(transmissions["Transmission"])
 
 freq_raw, trans = sort_by_frequency_descending(freq_raw, trans)
 
-transerr = np.array(transmissions["Transmissionerr"])
+transerr = np.array(transmissions["Transmissionerr"])#*0.06
 
 # =========================================================
 # FREQUENCY CALIBRATION (YOUR EXISTING MAPPING)
@@ -110,6 +120,12 @@ transerr = np.array(transmissions["Transmissionerr"])
 c = 2.99792458e8
 lambd = 328.1629601
 freq_base = -freq_raw * 2 + (c / lambd)
+
+def dettowav(det):
+    res = c/(((c / lambd) - det)/2)
+    return res
+
+print(dettowav(-2.278))
 
 freqerr = 0.01
 freqerr_array = np.full_like(freq_base, freqerr)
@@ -245,7 +261,7 @@ def build_model():
             shift107 = params[idx]; shift109 = params[idx+1]
             idx += 2
         else:
-            shift107 = Ag107ShiftDefault,
+            shift107 = Ag107ShiftDefault
             shift109 = Ag109ShiftDefault
 
         delta_f = delta_f_fixed
@@ -595,6 +611,12 @@ plt.subplots_adjust(hspace=0.05)
 # ---------------------------------------------------------
 res = residuals_norm
 res = res[np.isfinite(res)]
+N = res.size
+p = len(popt)          # number of fitted parameters
+nu = N - p             # degrees of freedom
+
+chi2 = np.sum(res**2)
+chi2_red = chi2 / nu
 
 within_1 = np.mean(np.abs(res) <= 1.0)
 within_2 = np.mean(np.abs(res) <= 2.0)
@@ -607,16 +629,16 @@ print(f"Fraction with |residual| <= 1σ : {within_1:.3f}  (expected ~0.683 for G
 print(f"Fraction with |residual| <= 2σ : {within_2:.3f}  (expected ~0.954 for Gaussian)")
 print(f"Fraction with |residual| <= 3σ : {within_3:.3f}  (expected ~0.997 for Gaussian)")
 
-# Optional: also report reduced chi^2 for consistency
-chi2_red = np.mean(res**2)  # since reduced chi^2 = (1/N) sum r_i^2 if no fitted dof correction
-print(f"Mean(residual^2) (≈ reduced χ² if dof ignored) : {chi2_red:.3f}")
+print(f"\nChi^2 = {chi2:.3f}")
+print(f"DoF (nu) = {nu}")
+print(f"Reduced Chi^2 = {chi2_red:.3f}")
 
 import scipy.stats as stats
 
-ks = stats.kstest(residuals_norm, 'norm')
+ks = ks = stats.kstest(res, 'norm')
 print("\nKS test vs N(0,1):")
 print(f"D = {ks.statistic:.3f},  p-value = {ks.pvalue:.3f}")
 
-plt.savefig("IsotopeshiftFit_"+str(Ag107ShiftDefault - Ag109ShiftDefault)+"MHz_POP.png", dpi=300, bbox_inches='tight')
+#plt.savefig("Spec15MicW4A_"+str(Ag107ShiftDefault - Ag109ShiftDefault)+"MHz_POP.png", dpi=300, bbox_inches='tight')
 
 plt.show()
