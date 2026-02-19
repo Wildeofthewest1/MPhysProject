@@ -17,18 +17,26 @@ FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
 Ag107ShiftDefault = 229.24#400#1000.0
 Ag109ShiftDefault = -246.76#-Ag107ShiftDefault #0.0
 
-BASELINE_ORDER   = 1      # 0=constant, 1=linear, 2=quadratic
+curr = 4
+
+BASELINE_ORDER   = 1   # 0..7 polynomial degree
+MAX_BASELINE_ORDER = 7
+if not (0 <= BASELINE_ORDER <= MAX_BASELINE_ORDER):
+    raise ValueError(f"BASELINE_ORDER must be between 0 and {MAX_BASELINE_ORDER}, got {BASELINE_ORDER}")
 
 delta_f_fixed = 0#1.11171      # GHz, only used if FIT_DELTA_F=False
 
-FITRESULT_ORDER = [
-    'Temp',
-    'AgNumberDensity',
-    'a',
-    'shift107',
-    'shift109',
-    'delta_f'
-] + [f"b{i}" for i in range(BASELINE_ORDER + 1)]
+def get_fitresult_order():
+    return [
+        'Temp',
+        'AgNumberDensity',
+        'a',
+        'shift107',
+        'shift109',
+        'delta_f'
+    ] + [f"b{i}" for i in range(BASELINE_ORDER + 1)]
+
+FITRESULT_ORDER = get_fitresult_order()
 
 # =========================================================
 # BASELINE DEFAULTS (used when FIT_BASELINE = False)
@@ -37,6 +45,10 @@ BASELINE_DEFAULTS = {
     'b0': 0.31512,#0.314427,
     'b1': 0.00140447#0.00135486,
 }
+
+# Auto-fill any missing baseline defaults up to BASELINE_ORDER with 0.0
+for i in range(BASELINE_ORDER + 1):
+    BASELINE_DEFAULTS.setdefault(f"b{i}", 0.0)
 
 # =========================================================
 # WORKING DIRECTORY
@@ -83,18 +95,18 @@ transmissions  = pd.read_csv("transmission3.csv")
 #frequencies    = pd.read_csv("frequencies5.csv")
 #transmissions  = pd.read_csv("Spec15MicroWatts.csv")
 
-
-#frequencies    = pd.read_csv("frequencies8A.csv")
-#transmissions  = pd.read_csv("Spec15MicW8A.csv")
-
-frequencies    = pd.read_csv("frequencies6A.csv")
-transmissions  = pd.read_csv("Spec15MicW6A.csv")
-
-#frequencies    = pd.read_csv("frequencies4A.csv")
-#transmissions  = pd.read_csv("Spec15MicW4A.csv")
-
-#frequencies    = pd.read_csv("frequencies7A.csv")
-#transmissions  = pd.read_csv("Spec15MicW7A.csv")
+if curr == 8:
+    frequencies    = pd.read_csv("frequencies8A.csv") #8A
+    transmissions  = pd.read_csv("Spec15MicW8A.csv")
+elif curr == 6:
+    frequencies    = pd.read_csv("frequencies6A.csv") #6A
+    transmissions  = pd.read_csv("Spec15MicW6A.csv")
+elif curr == 4:
+    frequencies    = pd.read_csv("frequencies4A.csv") #4A
+    transmissions  = pd.read_csv("Spec15MicW4A.csv")
+elif curr == 7:
+    frequencies    = pd.read_csv("frequencies7A.csv") #7A
+    transmissions  = pd.read_csv("Spec15MicW7A.csv")
 
 def sort_by_frequency_descending(frequency, transmission):
     if len(frequency) != len(transmission):
@@ -184,14 +196,16 @@ def _theory_curve_GHz_axis(Temp, AgNumberDensity, a=None, shift107=None, shift10
 # BASELINE MODEL
 # =========================================================
 def _baseline_poly(x, coeffs):
-    b0 = coeffs[0]
-    if len(coeffs) == 1:
-        return b0
-    b1 = coeffs[1]
-    if len(coeffs) == 2:
-        return b0 + b1 * x
-    b2 = coeffs[2]
-    return b0 + b1 * x + b2 * x**2
+    """
+    Evaluate polynomial baseline: b0 + b1*x + ... + bN*x^N
+    coeffs = [b0, b1, ..., bN]
+    """
+    coeffs = np.asarray(coeffs, dtype=float)
+    # Horner’s method (stable + fast)
+    y = 0.0
+    for c in coeffs[::-1]:
+        y = y * x + c
+    return y
 
 # =========================================================
 # MODEL BUILDER
@@ -220,12 +234,8 @@ def build_model():
     if FIT_DELTA_F:
         p0 += [delta_f_fixed]
     if FIT_BASELINE:
-        if BASELINE_ORDER == 0:
-            p0 += [1.0]
-        elif BASELINE_ORDER == 1:
-            p0 += [1.0, 0.0]
-        else:
-            p0 += [1.0, 0.0, 0.0]
+        # b0 ~ 1, others ~ 0
+        p0 += [1.0] + [0.0] * BASELINE_ORDER
 
     # bounds
     lo, hi = [], []
@@ -238,12 +248,9 @@ def build_model():
     if FIT_DELTA_F:
         lo += [delta_f_fixed - 2.0]; hi += [delta_f_fixed + 2.0]
     if FIT_BASELINE:
-        if BASELINE_ORDER == 0:
-            lo += [0.2]; hi += [2.0]
-        elif BASELINE_ORDER == 1:
-            lo += [0.2, -1.0]; hi += [2.0, 1.0]
-        else:
-            lo += [0.2, -1.0, -1.0]; hi += [2.0, 1.0, 1.0]
+        # b0 bounded separately; higher-order coefficients share symmetric bounds
+        lo += [0.2] + [-1.0] * BASELINE_ORDER
+        hi += [2.0] + [ 1.0] * BASELINE_ORDER
 
     bounds = (lo, hi)
 
@@ -393,7 +400,6 @@ def print_full_summary(fit_dict, fit_err, status_dict, fixed_dict, default_dict)
     s109 = _resolve('shift109')
     if np.isfinite(s107) and np.isfinite(s109):
         print(f"\nDerived isotope shift (shift107 - shift109) = {s107 - s109:.3f} MHz")
-
 
 def print_fitresults_tuples(status, fit_dict, fit_err, fixed_dict, default_dict):
     """
@@ -611,6 +617,73 @@ plt.subplots_adjust(hspace=0.05)
 # ---------------------------------------------------------
 res = residuals_norm
 res = res[np.isfinite(res)]
+
+import numpy as np
+
+plt.subplots_adjust(hspace=0.05)
+
+# -----------------------------
+# Add side histogram WITHOUT moving existing axes
+# -----------------------------
+# Freeze current figure/axes geometry AFTER subplots_adjust
+orig_fig_w, orig_fig_h = fig.get_size_inches()
+pos_main = ax_main.get_position().frozen()
+pos_res  = ax_res.get_position().frozen()
+
+# Extend canvas to the right
+extra_width_in = 2.2
+new_fig_w = orig_fig_w + extra_width_in
+fig.set_size_inches(new_fig_w, orig_fig_h, forward=True)
+
+def _keep_physical_bbox(pos, old_w, old_h, new_w, new_h):
+    x0_in = pos.x0 * old_w
+    y0_in = pos.y0 * old_h
+    w_in  = pos.width  * old_w
+    h_in  = pos.height * old_h
+    return [x0_in / new_w, y0_in / new_h, w_in / new_w, h_in / new_h]
+
+# Re-apply so main/res stay fixed in physical size and location
+ax_main.set_position(_keep_physical_bbox(pos_main, orig_fig_w, orig_fig_h, new_fig_w, orig_fig_h))
+ax_res .set_position(_keep_physical_bbox(pos_res,  orig_fig_w, orig_fig_h, new_fig_w, orig_fig_h))
+
+# Now place histogram flush to the right of the residuals axis
+res_pos = ax_res.get_position().frozen()
+pad = 0.01          # set to 0.003 if you want a tiny gap
+hist_width = 0.1  # fraction of total NEW figure width
+
+ax_hist = fig.add_axes(
+    [res_pos.x1 + pad, res_pos.y0, hist_width, res_pos.height],
+    sharey=ax_res
+)
+
+# Data
+res = residuals_norm[np.isfinite(residuals_norm)]
+
+# Bin width = 1 sigma
+rmin = min(np.floor(res.min()), -4)
+rmax = max(np.ceil(res.max()),  4)
+edges = np.arange(rmin - 0.5, rmax + 0.5 + 1e-9, 1.0)
+
+# Horizontal histogram (rotated)
+ax_hist.hist(
+    res, bins=edges, density=True,
+    orientation='horizontal',
+    alpha=0.6, color='blue', edgecolor='black', linewidth=0.8
+)
+
+# Ideal N(0,1) PDF overlay
+ys = np.linspace(edges[0], edges[-1], 400)
+pdf = (1.0 / np.sqrt(2.0 * np.pi)) * np.exp(-0.5 * ys**2)
+ax_hist.plot(pdf, ys, lw=2, color='red')
+
+# Cosmetics
+ax_hist.axhline(0, color='grey', lw=1)
+ax_hist.set_xlabel("PDF")
+ax_hist.set_xlim(left=0)
+ax_hist.tick_params(direction='in', top=True, right=True)
+plt.setp(ax_hist.get_yticklabels(), visible=False)
+
+
 N = res.size
 p = len(popt)          # number of fitted parameters
 nu = N - p             # degrees of freedom
@@ -639,6 +712,6 @@ ks = ks = stats.kstest(res, 'norm')
 print("\nKS test vs N(0,1):")
 print(f"D = {ks.statistic:.3f},  p-value = {ks.pvalue:.3f}")
 
-#plt.savefig("Spec15MicW4A_"+str(Ag107ShiftDefault - Ag109ShiftDefault)+"MHz_POP.png", dpi=300, bbox_inches='tight')
+plt.savefig("Spec15MicW"+str(curr)+"A_"+str(Ag107ShiftDefault - Ag109ShiftDefault)+"MHz_POP_NP.png", dpi=300, bbox_inches='tight')
 
 plt.show()
