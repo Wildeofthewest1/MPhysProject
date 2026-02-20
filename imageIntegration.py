@@ -93,9 +93,11 @@ pixel_size = 3.45e-6 #m
 pixel_area = pixel_size**2 #3.45 x 3.45 micrometers squared
 photon_energy = h * c / wavelength
 
-p_total = 1.21e-6/4 #1.02e-6#1.21e-6
+p_total = 15e-6#1.21e-6/4 #1.02e-6#1.21e-6
 p_total_error = 0.04e-6#0.04e-6
 print("TOTAL MEASURED POWER = " + str(p_total) + "~+-~" + str(p_total_error) + "W")
+
+#15e-6 = 0.015 I/Isat
 
 if mode == 0:
 	beam_images = {
