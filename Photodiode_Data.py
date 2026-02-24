@@ -1149,9 +1149,19 @@ def errorSimple(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err):
 
 	return T, T_error
 
+def divided_error_and_mean(ch1, ch2, bg1__, bg2__):
+
+	tr = (ch1-bg1__)/(ch2-bg2__)
+
+	tr_ave = np.mean(tr)
+
+	tr_error = np.std(tr)/7.95
+
+	return np.array(np.abs(tr_ave)), np.array(np.abs(tr_error))
+
 import glob
 #14-22
-for k in range(-7,-3):
+for k in range(-6,-5):
 	print(k)
 	first = k
 
@@ -1263,7 +1273,8 @@ for k in range(-7,-3):
 			seed=123+i\
 		)
 		"""
-		T, T_err = errorSimple(ch1_arr, ch2_arr,bg1, bg1_error,bg2, bg2_error)
+		T, T_err = divided_error_and_mean(ch1_arr, ch2_arr, bg1 ,bg2)
+		#errorSimple(ch1_arr, ch2_arr,bg1, bg1_error,bg2, bg2_error)
 
 		#if i != len(files)-1:
 		averages1.append((T, T_err))
@@ -1370,10 +1381,10 @@ for k in range(-7,-3):
 		elif first == -7:
 			xs = freq2det(frequencies7A)
 
-	y1 = np.abs(np.abs(averages1_means))# - np.abs(background1_mean))
+	y1 = averages1_means# - np.abs(background1_mean))
 	#y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
 
-	y1_err = np.sqrt(averages1_errs**2)# + background1_err**2)# + )
+	y1_err = averages1_errs# + background1_err**2)# + )
 	#y2_err = np.sqrt(averages2_errs**2 + background2_err**2)# + )
 
 	powers = ((238.1-0.179),

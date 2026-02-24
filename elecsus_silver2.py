@@ -5,8 +5,8 @@ from libs import main_functions as mf
 from matplotlib import rcParams
 
 import os
-#os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
-os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
+#os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
 
@@ -54,18 +54,72 @@ fitresultsErrors = (11.8845, 9.4676e-12, 0.00520905, 0, 0, 0.00846909, 0.0010374
 #fitresults = (402.255, 1.46035e+16, None, 229.24, -246.76, 1.04713, 0.314955, 0.00146153)
 #fitresultsErrors = (3.7081, 6.15048e-13, 0, 0, 0, 0.00257602, 0, 0)
 
-first = 2
+fitresults = (85.0875, 1e+15, 0.483269, 229.24, -246.76, 0.974239, 1.00788, -0.000142033, -0.000118411)
+fitresultsErrors = (20.6645, 6.77552e-11, 0.00999288, 0, 0, 0.014525, 0.000502216, 0.000113887, 2.05673e-05)
+
+first = 8
 AgCustomGroundPopulation = True
+
+
+import pandas as pd
+frequencies = pd.read_csv("frequencies1.csv")
+frequencies2 = pd.read_csv("frequencies2.csv")
+frequencies3 = pd.read_csv("frequencies3.csv")
+transmissions1 = pd.read_csv("transmission1.csv")
+transmissions2 = pd.read_csv("transmission2.csv")
+transmissions3 = pd.read_csv("transmission3.csv")
+if first == 0:
+	freq = np.array(frequencies["freq1"])
+	trans = np.array(transmissions1["Transmission1"])
+	transerr = np.array(transmissions1["Transmission1err"])
+	adj = 0.011
+elif first == 1:
+	freq = np.array(frequencies2["freq2"])
+	trans = np.array(transmissions2["Transmission2"])
+	transerr = np.array(transmissions2["Transmission2err"])
+	adj = 0
+elif first == 2:
+	freq = np.array(frequencies3["freq3"])
+	trans = np.array(transmissions3["Transmission3"])
+	transerr = np.array(transmissions3["Transmission3err"])
+	adj = 0
+elif first == 8:
+	fitresults = (155.173, 1.44153e+16, 0.433209, 229.24, -246.76, 0.957844, 1.01574, 0.0068862, -0.000409223, -4.88557e-05, 5.02038e-06)
+	fitresultsErrors = (2.5533, 4.57799e-10, 0.00117417, 0, 0, 0.00167431, 0.000673272, 0.00012505, 3.59029e-05, 1.90248e-06, 3.71449e-07)
+	frequencies    = pd.read_csv("frequencies8A.csv")
+	transmissions  = pd.read_csv("Spec15MicW8A.csv")
+	freq = np.array(frequencies["freq"])
+	trans = np.array(transmissions["Transmission"])
+	transerr = np.array(transmissions["Transmissionerr"])
+elif first == 7:
+	fitresults = (146.508, 9.68541e+15, 0.427828, 229.24, -246.76, 0.971351, 1.02897, 0.00153783, -0.000107466)
+	fitresultsErrors = (3.02813, 4.54146e-12, 0.00140673, 0, 0, 0.00198064, 0.000556059, 0.000115817, 2.08349e-05)
+	frequencies    = pd.read_csv("frequencies7A.csv")
+	transmissions  = pd.read_csv("Spec15MicW7A.csv")
+	freq = np.array(frequencies["freq"])
+	trans = np.array(transmissions["Transmission"])
+	transerr = np.array(transmissions["Transmissionerr"])
+elif first == 6:
+	fitresults = (132.15, 4.23146e+15, 0.428362, 229.24, -246.76, 0.955212, 1.0232, 0.00231507, -0.000168166)
+	fitresultsErrors = (5.81956, 1.5608e-11, 0.00281734, 0, 0, 0.00383613, 0.000536506, 0.000115592, 2.06861e-05)
+	frequencies    = pd.read_csv("frequencies6A.csv")
+	transmissions  = pd.read_csv("Spec15MicW6A.csv")
+	freq = np.array(frequencies["freq"])
+	trans = np.array(transmissions["Transmission"])
+	transerr = np.array(transmissions["Transmissionerr"])
+elif first == 4:
+	fitresults = (85.0875, 1e+15, 0.483269, 229.24, -246.76, 0.974239, 1.00788, -0.000142033, -0.000118411)
+	fitresultsErrors = (20.6645, 6.77552e-11, 0.00999288, 0, 0, 0.014525, 0.000502216, 0.000113887, 2.05673e-05)
+	frequencies    = pd.read_csv("frequencies4A.csv")
+	transmissions  = pd.read_csv("Spec15MicW4A.csv")
+	freq = np.array(frequencies["freq"])
+	trans = np.array(transmissions["Transmission"])
+	transerr = np.array(transmissions["Transmissionerr"])
 
 Temp = fitresults[0]
 AgNumberDensity = fitresults[1]
 customa = fitresults[2]
 AgIsotopeShift = (fitresults[3],fitresults[4])
-
-# Baseline params (manual inputs, used to normalise plotted data)
-b0 = fitresults[6]
-b1 = fitresults[7]
-
 deltaf = fitresults[5]
 
 Dline = 'D2'
@@ -135,32 +189,14 @@ def format_sci_tex(num):
 #Add data to figure
 ##########################################
 
-import pandas as pd
-frequencies = pd.read_csv("frequencies1.csv")
-frequencies2 = pd.read_csv("frequencies2.csv")
-frequencies3 = pd.read_csv("frequencies3.csv")
-transmissions1 = pd.read_csv("transmission1.csv")
-transmissions2 = pd.read_csv("transmission2.csv")
-transmissions3 = pd.read_csv("transmission3.csv")
+
+
+
 
 c = 2.99792458e8
 lambd = 328.1629601
 
-if first == 0:
-	freq = np.array(frequencies["freq1"])
-	trans = np.array(transmissions1["Transmission1"])
-	transerr = np.array(transmissions1["Transmission1err"])
-	adj = 0.011
-elif first == 1:
-	freq = np.array(frequencies2["freq2"])
-	trans = np.array(transmissions2["Transmission2"])
-	transerr = np.array(transmissions2["Transmission2err"])
-	adj = 0
-elif first == 2:
-	freq = np.array(frequencies3["freq3"])
-	trans = np.array(transmissions3["Transmission3"])
-	transerr = np.array(transmissions3["Transmission3err"])
-	adj = 0
+
 
 freqerr = 0.01 #0.01 GHz
 lambderr = 0.0000022
@@ -190,7 +226,13 @@ exp_detuning = freq
 x0 = np.mean(exp_detuning)
 
 # Baseline from supplied (b0,b1)
-baseline = b0 + b1*(exp_detuning - x0)
+
+param = exp_detuning - x0
+
+b = fitresults[6:]
+
+# numpy expects highest power first
+baseline = np.polyval(b[::-1], param)
 
 # Safety: avoid dividing by zero / negative baseline
 if np.any(baseline <= 0):
