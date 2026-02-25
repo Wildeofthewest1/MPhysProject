@@ -17,7 +17,7 @@ FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
 Ag107ShiftDefault = 229.24#400#1000.0
 Ag109ShiftDefault = -246.76#-Ag107ShiftDefault #0.0
 
-curr = 7
+curr = 9
 
 BASELINE_ORDER   = 4   # 0..7 polynomial degree
 MAX_BASELINE_ORDER = 7
@@ -100,6 +100,11 @@ elif curr == 4:
 elif curr == 7:
 	frequencies    = pd.read_csv("frequencies7A.csv")
 	transmissions  = pd.read_csv("Spec15MicW7A.csv")
+	BASELINE_ORDER = 2
+
+elif curr == 9:
+	frequencies    = pd.read_csv("frequencies7A.csv")
+	transmissions  = pd.read_csv("SubDoppler8A.csv")
 	BASELINE_ORDER = 2
 
 FITRESULT_ORDER = get_fitresult_order()
@@ -606,6 +611,28 @@ data_norm = exp_transmission / baseline_fit
 err_norm  = exp_error / np.abs(baseline_fit)
 
 residuals_norm = (data_norm - theory_only) / err_norm
+
+#####
+from pathlib import Path
+import pandas as pd
+import numpy as np
+
+script_dir = Path(__file__).resolve().parent
+
+# Fixed name per curr (will overwrite each run for the same curr)
+output_file = script_dir / f"baseline_corrected_curr{curr}.csv"
+
+df_out = pd.DataFrame({
+	"detuning_uv_GHz": np.asarray(exp_detuning, float),
+	"Transmission_BaselineCorrected": np.asarray(data_norm, float),
+	"TransmissionErr_BaselineCorrected": np.asarray(err_norm, float),
+	"Theory_NoBaseline": np.asarray(theory_only, float),
+})
+
+df_out.to_csv(output_file, index=False)  # overwrites automatically
+print("\nSaved baseline-corrected plot data to:")
+print(output_file)
+#####
 
 fig, (ax_main, ax_res) = plt.subplots(
 	2, 1, figsize=(8, 6), sharex=True,

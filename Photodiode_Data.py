@@ -116,7 +116,6 @@ frequencies2 = (456775.401,
 df = pd.DataFrame({
 	"freq": frequencies,
 })
-
 df.to_csv("frequencies1.csv", index=False)
 
 df = pd.DataFrame({
@@ -891,6 +890,13 @@ df.to_csv("frequencies7A.csv", index=False)
 
 """
 
+frequencies = (456779.200, 456779.152)
+
+df = pd.DataFrame({
+	"freq": frequencies,
+})
+df.to_csv("frequencies8ASD.csv", index=False)
+
 #powers_ = np.array((1.00, 1.02, 1.02, 1.02, 1.02, 1.00, 1.02, 1.02, 1.01, 1.01, 1.02, 1.01, 1.01, 1.00, 1.01, 1.02, 1.02, 1.03, 1.02, 1.02, 1.02, 1.02, 1.02, 1.01, 1.01, 1.01, 1.02, 1.02, 1.01, 1.02, 1.02, 1.01, 1.01, 1.02, 1.01, 1.01, 1.01, 1.02, 1.02, 1.02, 1.02, 1.01, 1.02, 1.02, 1.02, 1.04, 1.03, 1.04, 1.04, 1.04, 1.04, 1.05, 1.04, 1.04, 1.03, 1.04, 1.05, 1.05, 1.04, 1.04, 1.04, 1.05, 1.05, 1.05, 1.05, 1.05, 1.07, 1.06, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.06, 1.05, 1.06, 1.07, 1.07, 1.06, 1.07, 1.07, 1.06, 1.07, 1.07, 1.05, 1.06, 1.07, 1.06, 1.07, 1.07, 1.07, 1.06, 1.07, 1.07, 1.06, 1.07, 1.07, 1.08, 1.07, 1.07, 1.06, 1.07, 1.07, 1.07, 1.08, 1.08, 1.08, 1.08, 1.07, 1.08, 1.08, 1.07, 1.08, 1.09, 1.08, 1.07, 1.07, 1.08, 1.08, 1.08, 1.08, 1.09, 1.07, 1.08, 1.08, 1.08, 1.08, 1.09, 1.09, 1.08, 1.09, 1.08, 1.08, 1.08, 1.08, 1.07, 1.08, 1.08, 1.08, 1.09, 1.10, 1.10, 1.08, 1.10, 1.09, 1.10, 1.09, 1.10, 1.09, 1.08, 1.08, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.11, 1.10, 1.10, 1.10, 1.10, 1.11, 1.10, 1.11, 1.10, 1.1, 1.11, 1.11, 1.11, 1.10, 1.11, 1.11, 1.11, 1.11, 1.10, 1.10, 1.11, 1.11, 1.11, 1.11, 1.10, 1.11, 1.11, 1.12, 1.12, 1.11, 1.11, 1.11, 1.12, 1.10, 1.12, 1.12, 1.11, 1.12, 1.12, 1.13, 1.11, 1.12, 1.12, 1.12, 1.12, 1.12, 1.11, 1.11, 1.1, 1.13, 1.13, 1.13, 1.13, 1.12, 1.13, 1.12, 1.12, 1.13, 1.13, 1.13, 1.13, 1.12, 1.13, 1.13, 1.12, 1.11, 1.1, 1.11, 1.13, 1.13, 1.13, 1.13, 1.13, 1.13, 1.13, 1.14, 1.14, 1.15, 1.13, 1.14, 1.14, 1.13, 1.14, 1.15, 1.13, 1.13, 1.13, 1.14, 1.13, 1.13, 1.13, 1.14, 1.13, 1.13, 1.13, 1.13, 1.13, 1.13, 1.14, 1.13, 1.15, 1.13, 1.13, 1.13, 1.15, 1.13, 1.14, 1.14, 1.15, 1.15, 1.15, 1.13, 1.15, 1.17, 1.15, 1.14, 1.14, 1.15, 1.15, 1.14, 1.16, 1.15, 1.16, 1.15, 1.15, 1.15, 1.15, 1.16, 1.17, 1.15, 1.16, 1.14, 1.15, 1.16, 1.16, 1.16, 1.15, 1.16, 1.16, 1.15, 1.16, 1.16, 1.16, 1.15, 1.16, 1.17, 1.16, 1.16, 1.17, 1.16, 1.16, 1.18, 1.15, 1.16, 1.15, 1.16, 1.16, 1.17, 1.17, 1.17, 1.17, 1.17, 1.16, 1.16, 1.17, 1.18, 1.17, 1.17, 1.17, 1.17, 1.17, 1.17, 1.17, 1.18, 1.17, 1.17, 1.18, 1.17, 1.19, 1.18, 1.17, 1.19, 1.18, 1.18, 1.17, 1.18, 1.17, 1.17, 1.19, 1.19, 1.19, 1.19, 1.19, 1.18, 1.18, 1.19, 1.19, 1.19, 1.19, 1.20, 1.19, 1.19, 1.19, 1.19, 1.19, 1.19, 1.19, 1.18, 1.19, 1.19, 1.19, 1.20, 1.19, 1.19, 1.19, 1.19, 1.20, 1.19, 1.20, 1.19, 1.19, 1.18, 1.19, 1.20, 1.21, 1.19, 1.20, 1.21, 1.20, 1.21, 1.20, 1.19, 1.19, 1.21, 1.21, 1.20, 1.20, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.19, 1.21, 1.22, 1.21, 1.20, 1.22, 1.21, 1.19, 1.21, 1.21, 1.21, 1.19, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.20, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.20, 1.21, 1.21, 1.22, 1.21, 1.22, 1.21, 1.22, 1.21, 1.22, 1.20, 1.22, 1.21, 1.23, 1.23, 1.21, 1.22, 1.23, 1.23, 1.22, 1.23, 1.23, 1.23, 1.22, 1.24, 1.23, 1.23, 1.22, 1.23, 1.23, 1.24, 1.23, 1.23, 1.23, 1.23, 1.23, 1.23, 1.24, 1.23, 1.23, 1.23, 1.23, 1.23, 1.24, 1.24, 1.23, 1.23, 1.23, 1.23, 1.23, 1.22, 1.22, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.19, 1.19, 1.18, 1.17, 1.17, 1.17, 1.17, 1.17, 1.17, 1.16, 1.17))
 
 # ----------------------------------------------------
@@ -919,6 +925,8 @@ def load_tektronix_csv(filename):
 
 	return t, ch1, ch2
 
+"""
+
 def effective_sample_size(x):
 	x = np.asarray(x, float)
 	x = x - np.mean(x)
@@ -940,10 +948,10 @@ def standard_error(array):
 	return np.std(array, ddof=1)/np.sqrt(250)#effective_sample_size(array))
 
 def effective_sample_size_windowed(x, fs, max_lag_s=0.02):
-    """
-    Estimate N_eff using a windowed (tapered) autocorrelation sum.
-    max_lag_s: only trust autocorrelation out to this lag (seconds).
-    """
+    
+    #Estimate N_eff using a windowed (tapered) autocorrelation sum.
+    #max_lag_s: only trust autocorrelation out to this lag (seconds).
+    
     x = np.asarray(x, float)
     x = x[np.isfinite(x)]
     n = x.size
@@ -978,11 +986,11 @@ def standard_error_effective(x, fs = 100000, max_lag_s=0.02):
 def mean_ratio_with_bg_uncertainty(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err,
 	n_mc=5000, seed=0, guard_den=1e-12,
 	bootstrap=False):
-	"""
-	T = mean( (|ch1|-bg1) / (|ch2|-bg2) )
-	Uncertainty includes background mean uncertainties via Monte Carlo.
-	If bootstrap=True, also includes finite-sample waveform uncertainty.
-	"""
+	
+	#T = mean( (|ch1|-bg1) / (|ch2|-bg2) )
+	#Uncertainty includes background mean uncertainties via Monte Carlo.
+	#If bootstrap=True, also includes finite-sample waveform uncertainty.
+	
 	rng = np.random.default_rng(seed)
 
 	x = np.abs(ch1_arr).astype(float)
@@ -1041,11 +1049,11 @@ def mean_and_block_sem(x, fs=100_000, block_time=0.2):
 	return mean, err, M, L
 
 def mean_and_std_error(x):
-    """
-    Returns:
-        mean  : mean of the data
-        error : standard deviation of the data (used as error)
-    """
+    
+    #Returns:
+    #    mean  : mean of the data
+    #    error : standard deviation of the data (used as error)
+    
     x = np.asarray(x)
     x = x[np.isfinite(x)]  # remove NaN/inf if present
 
@@ -1149,6 +1157,8 @@ def errorSimple(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err):
 
 	return T, T_error
 
+"""
+
 def divided_error_and_mean(ch1, ch2, bg1__, bg2__):
 
 	tr = (ch1-bg1__)/(ch2-bg2__)
@@ -1161,7 +1171,7 @@ def divided_error_and_mean(ch1, ch2, bg1__, bg2__):
 
 import glob
 #14-22
-for k in range(-6,-5):
+for k in range(-8,-7):
 	print(k)
 	first = k
 
@@ -1225,6 +1235,8 @@ for k in range(-6,-5):
 		folder = "Spec15MicrowattNEW/4A/"
 	elif first == -7:
 		folder = "Spec15MicrowattNEW/7A/"
+	elif first == -8:
+		folder = "Sub_Doppler_1/With_Pump/"
 
 	base_path = "Photodiode_Data/" + folder
 
@@ -1252,8 +1264,8 @@ for k in range(-6,-5):
 	#bg1_error = standard_error(ch1_arr_)#np.std(np.abs(ch1_arr_), ddof=1) / np.sqrt(effective_sample_size(ch1_arr_))
 	#bg2_error = standard_error(ch2_arr_)#np.std(np.abs(ch2_arr_), ddof=1) / np.sqrt(effective_sample_size(ch2_arr_))
 
-	bg1, bg1_error = mean_and_std_error(ch1_arr_)
-	bg2, bg2_error = mean_and_std_error(ch2_arr_)
+	bg1 = np.mean(ch1_arr_)
+	bg2 = np.mean(ch2_arr_)
 
 
 	for i in range(0, len(files)-1):
@@ -1334,6 +1346,8 @@ for k in range(-6,-5):
 		frequencies4A = pd.read_csv("frequencies4A.csv")
 		frequencies7A = pd.read_csv("frequencies7A.csv")
 
+		frequencies8ASD = pd.read_csv("frequencies7A.csv")#######################################
+
 		xs1 = np.linspace(1, 4, len(files)-1)
 		xs2 = np.linspace(0, len(files)-2, len(files)-1)
 
@@ -1380,6 +1394,8 @@ for k in range(-6,-5):
 			xs = freq2det(frequencies4A)
 		elif first == -7:
 			xs = freq2det(frequencies7A)
+		elif first == -8:
+			xs = freq2det(frequencies8ASD)
 
 	y1 = averages1_means# - np.abs(background1_mean))
 	#y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -1507,6 +1523,8 @@ for k in range(-6,-5):
 		df.to_csv("Spec15MicW4A.csv", index=False)
 	elif first == -7:
 		df.to_csv("Spec15MicW7A.csv", index=False)
+	elif first == -8:
+		df.to_csv("SubDoppler8A.csv", index=False)
 	######## save to csv
 
 	print("saved to csv")
