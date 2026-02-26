@@ -9,7 +9,7 @@ import os
 # =========================================================
 # USER SWITCHES (any combination)
 # =========================================================
-FIT_POPULATION   = True  # fit 'a'
+FIT_POPULATION   = True # fit 'a'
 FIT_ISOTOPE      = False#True  # fit (shift107, shift109); if False -> use library defaults
 FIT_DELTA_F      =  True  # fit global detuning offset delta_f (GHz)
 FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
@@ -366,7 +366,6 @@ def _fmt(name, val, err=None):
 
 	return f"{val:.6g} ± {err:.6g}"
 
-
 def print_full_summary(fit_dict, fit_err, status_dict, fixed_dict, default_dict):
 	"""
 	Always prints ALL parameters, whether fitted or not.
@@ -491,7 +490,6 @@ def print_fitresults_tuples(status, fit_dict, fit_err, fixed_dict, default_dict)
 	print("\nPaste-ready fitresultsErrors:")
 	print(f"fitresultsErrors = ({errors_str})")
 
-
 # =========================================================
 # FIT
 # =========================================================
@@ -612,7 +610,7 @@ err_norm  = exp_error / np.abs(baseline_fit)
 
 residuals_norm = (data_norm - theory_only) / err_norm
 
-#####
+################################################################################################################################################################
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -623,16 +621,83 @@ script_dir = Path(__file__).resolve().parent
 output_file = script_dir / f"baseline_corrected_curr{curr}.csv"
 
 df_out = pd.DataFrame({
-	"detuning_uv_GHz": np.asarray(exp_detuning, float),
-	"Transmission_BaselineCorrected": np.asarray(data_norm, float),
-	"TransmissionErr_BaselineCorrected": np.asarray(err_norm, float),
-	"Theory_NoBaseline": np.asarray(theory_only, float),
+    "detuning_uv_GHz": np.asarray(exp_detuning, float),
+
+    # what you plot on ax_main:
+    "Transmission_BaselineCorrected": np.asarray(data_norm, float),
+    "TransmissionErr_BaselineCorrected": np.asarray(err_norm, float),
+    "Theory_NoBaseline": np.asarray(theory_only, float),
+
+    # what you plot on ax_res:
+    "Residuals_Norm": np.asarray(residuals_norm, float),
 })
 
 df_out.to_csv(output_file, index=False)  # overwrites automatically
 print("\nSaved baseline-corrected plot data to:")
 print(output_file)
-#####
+################################################################################################################################################################
+
+def save_fit_parameters_csv(
+    curr: int,
+    script_dir: Path,
+    status: dict,
+    fit_dict: dict,
+    fit_err: dict,
+    fixed_dict: dict,
+    default_dict: dict,
+    baseline_order: int
+):
+    """
+    Saves one row per parameter with:
+        name, status, value, error
+    Overwrites: fit_params_curr{curr}.csv
+    """
+
+    ordered = (
+        ['Temp', 'AgNumberDensity', 'a', 'shift107', 'shift109', 'delta_f'] +
+        [f"b{i}" for i in range(0, baseline_order + 1)]
+    )
+
+    rows = []
+    for name in ordered:
+        if name not in status:
+            continue
+
+        st = status[name]
+        if st == "FIT":
+            val = fit_dict.get(name, np.nan)
+            err = fit_err.get(name, np.nan)
+        elif st == "FIXED":
+            val = fixed_dict.get(name, np.nan)
+            err = 0.0
+        elif st == "DEFAULT":
+            val = default_dict.get(name, np.nan)  # may be NaN if you don't know it numerically
+            err = 0.0
+        else:
+            val = np.nan
+            err = np.nan
+
+        rows.append({"parameter": name, "status": st, "value": val, "error": err})
+
+    dfp = pd.DataFrame(rows)
+
+    out = script_dir / f"fit_params_curr{curr}.csv"
+    dfp.to_csv(out, index=False)  # overwrites
+    print("\nSaved fitted parameters to:")
+    print(out)
+
+save_fit_parameters_csv(
+    curr=curr,
+    script_dir=script_dir,
+    status=status,
+    fit_dict=fit_dict,
+    fit_err=fit_err,
+    fixed_dict=fixed,
+    default_dict=default,
+    baseline_order=BASELINE_ORDER
+)
+
+################################################################################################################################################################
 
 fig, (ax_main, ax_res) = plt.subplots(
 	2, 1, figsize=(8, 6), sharex=True,
