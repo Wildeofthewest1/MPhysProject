@@ -16,6 +16,20 @@ rcParams['xtick.minor.visible'] = True
 rcParams['ytick.minor.visible'] = True
 
 
+# =====================================================
+# Custom (hard-coded) x-shift overrides in GHz
+# These are applied to BOTH data and theory x-values.
+# If a curr is listed here, it overrides fitted delta_f.
+# =====================================================
+CUSTOM_DELTA_F_OVERRIDE_GHZ = {
+	9: 0.15000,   # <-- set your custom delta_f for curr9 here (GHz)
+}
+
+# Optional: if you want "extra" shift added on top of fitted delta_f instead of overriding,
+# set this to True. Otherwise (default False) it REPLACES fitted delta_f for that curr.
+CUSTOM_DELTA_F_IS_ADDITIVE = True
+
+
 # -----------------------------
 # File finders
 # -----------------------------
@@ -87,35 +101,103 @@ def fmt_sci(x, sig=4):
 	# keep mantissa in [1,10)
 	return f"{mant:.{sig}g}\\times 10^{{{exp}}}"
 
-def fmt_val_err(val, err, sig=4):
+import numpy as np
+
+import numpy as np
+
+
+import numpy as np
+
+def round_err_and_match_value(val, err):
 	"""
-	Always returns a string safe to place in a tabular cell.
-	Numeric output is wrapped in \\( ... \\) so \\pm is valid.
+	Physics-style rounding:
+	  - Round error to 1 s.f.
+	  - If leading digit is 1, round error to 2 s.f.
+	  - Round value to the same decimal place as the rounded error
+
+	Returns:
+	  (v_rounded, e_rounded, decimals)
+	where decimals is the number of decimal places used in round(..., decimals)
+	(can be negative for rounding to 10s, 100s, etc.)
 	"""
-	if val is None or (isinstance(val, float) and not np.isfinite(val)):
+	v = float(val)
+	e = float(err)
+
+	if (not np.isfinite(v)) or (not np.isfinite(e)) or e <= 0:
+		return v, None, None
+
+	exp = int(np.floor(np.log10(abs(e))))     # e = mant * 10^exp
+	mant = e / (10 ** exp)                    # 1 <= mant < 10
+
+	sig = 2 if 1 <= mant < 2 else 1           # 2 s.f. only if leading digit is 1
+	decimals = -exp + (sig - 1)
+
+	e_rounded = round(e, decimals)
+	v_rounded = round(v, decimals)
+
+	return v_rounded, e_rounded, decimals
+
+
+def fmt_num_latex(x, sci_sig=4):
+	"""
+	Format a number for LaTeX math mode.
+	Uses scientific notation for very large/small values.
+	"""
+	x = float(x)
+	if not np.isfinite(x):
+		return r"--"
+	if x == 0:
+		return "0"
+
+	ax = abs(x)
+	if ax >= 1e4 or ax < 1e-3:
+		exp = int(np.floor(np.log10(ax)))
+		mant = x / (10 ** exp)
+		return f"{mant:.{sci_sig}g}\\times 10^{{{exp}}}"
+	else:
+		return f"{x:g}"
+
+
+def fmt_val_err_phys(val, err, sci_sig=4):
+	"""
+	Return a LaTeX-safe string for a table cell:
+	  - value and error rounded with physics rule
+	  - value rounded to match error decimal place
+	  - both wrapped in \\( ... \\) so \\pm works
+	"""
+	if val is None:
 		return r"--"
 
 	try:
 		v = float(val)
 	except Exception:
-		return latex_escape(str(val))
+		return str(val)
 
-	e = None
-	if err is not None:
-		try:
-			e = float(err)
-		except Exception:
-			e = None
+	# no error or invalid error -> just value
+	try:
+		e = float(err) if err is not None else None
+	except Exception:
+		e = None
 
-	# no/invalid error => just value in math mode
-	if e is None or (not np.isfinite(e)) or e == 0:
-		vs = fmt_sci(v, sig=sig) if abs(v) >= 1e4 or (abs(v) > 0 and abs(v) < 1e-3) else f"{v:.{sig}g}"
-		return rf"\({vs}\)"
+	if e is None or (not np.isfinite(e)) or e <= 0:
+		return rf"\({fmt_num_latex(v, sci_sig=sci_sig)}\)"
 
-	# value ± error in math mode
-	vs = fmt_sci(v, sig=sig) if abs(v) >= 1e4 or (abs(v) > 0 and abs(v) < 1e-3) else f"{v:.{sig}g}"
-	es = fmt_sci(e, sig=sig) if abs(e) >= 1e4 or (abs(e) > 0 and abs(e) < 1e-3) else f"{e:.{sig}g}"
-	return rf"\({vs} \pm {es}\)"
+	v_r, e_r, decimals = round_err_and_match_value(v, e)
+
+	# If we’re not in sci territory, force fixed decimals so the value matches the error
+	ax = max(abs(v_r), abs(e_r))
+	use_sci = (ax >= 1e4) or (0 < ax < 1e-3)
+
+	if not use_sci and decimals is not None and decimals > 0:
+		fmt = f"{{:.{decimals}f}}"
+		v_str = fmt.format(v_r)
+		e_str = fmt.format(e_r)
+	else:
+		# either decimals <= 0 or scientific formatting chosen
+		v_str = fmt_num_latex(v_r, sci_sig=sci_sig)
+		e_str = fmt_num_latex(e_r, sci_sig=sci_sig)
+
+	return rf"\({v_str} \pm {e_str}\)"
 
 
 def build_param_table(currs, param_files, param_list=None, fitted_only=False, sig=4):
@@ -195,7 +277,7 @@ def build_param_table(currs, param_files, param_list=None, fitted_only=False, si
 				continue
 			val = r0.iloc[0].get("value", np.nan)
 			err = r0.iloc[0].get("error", np.nan)
-			row_cells.append(fmt_val_err(val, err, sig=sig))
+			row_cells.append(fmt_val_err_phys(val, err))
 		lines.append(" & ".join(row_cells) + r" \\")
 
 	lines.append(r"\hline")
@@ -205,6 +287,175 @@ def build_param_table(currs, param_files, param_list=None, fitted_only=False, si
 
 	return "\n".join(lines)
 
+def load_curve_for_subtraction(
+	curr: int,
+	curve_files: dict,
+	param_files: dict,
+	apply_x_shift: bool,
+	hide_bad_errors: bool,
+	err_thresh: float = 0.03
+):
+	"""
+	Load one baseline_corrected_curr{curr}.csv and apply the same cleaning and optional delta_f shift.
+
+	Returns dict with keys: x, y, yerr, yfit
+	where:
+	  y    = Transmission_BaselineCorrected (data)
+	  yfit = Theory_NoBaseline (theory)
+	"""
+
+	df = pd.read_csv(curve_files[curr])
+
+	x = df["detuning_uv_GHz"].to_numpy(float)
+	y = df["Transmission_BaselineCorrected"].to_numpy(float)
+	yerr = df["TransmissionErr_BaselineCorrected"].to_numpy(float) if "TransmissionErr_BaselineCorrected" in df.columns else None
+	yfit = df["Theory_NoBaseline"].to_numpy(float)
+
+	mask = np.isfinite(x) & np.isfinite(y) & np.isfinite(yfit)
+	if yerr is not None:
+		mask &= np.isfinite(yerr)
+		if hide_bad_errors:
+			mask &= (np.abs(yerr) <= err_thresh)
+
+	x, y, yfit = x[mask], y[mask], yfit[mask]
+	if yerr is not None:
+		yerr = yerr[mask]
+
+	order = np.argsort(x)
+	x, y, yfit = x[order], y[order], yfit[order]
+	if yerr is not None:
+		yerr = yerr[order]
+
+	dshift = get_delta_f_shift(curr, apply_x_shift=apply_x_shift, param_files=param_files)
+	if dshift != 0.0:
+		print(f"curr{curr}: applying delta_f shift = {dshift:.6g} GHz (subtraction)")
+		x = x + dshift
+
+	return {"x": x, "y": y, "yerr": yerr, "yfit": yfit}
+
+
+def plot_theory_minus_data(
+	curve_files: dict,
+	param_files: dict,
+	apply_x_shift: bool,
+	hide_bad_errors: bool,
+	theory_curr: int = 8,
+	data_curr: int = 9,
+	err_thresh: float = 0.03
+):
+	"""
+	Plot: (theory from theory_curr) - (data from data_curr)
+
+	- Interpolates theory onto the data x-grid (after any delta_f shift).
+	- Error bars come from the data only.
+	- No residual subplots; separate figure.
+	"""
+
+	if theory_curr not in curve_files:
+		raise ValueError(f"Missing curve file for theory curr{theory_curr}")
+	if data_curr not in curve_files:
+		raise ValueError(f"Missing curve file for data curr{data_curr}")
+
+	th = load_curve_for_subtraction(
+		curr=theory_curr,
+		curve_files=curve_files,
+		param_files=param_files,
+		apply_x_shift=apply_x_shift,
+		hide_bad_errors=hide_bad_errors,
+		err_thresh=err_thresh
+	)
+	da = load_curve_for_subtraction(
+		curr=data_curr,
+		curve_files=curve_files,
+		param_files=param_files,
+		apply_x_shift=apply_x_shift,
+		hide_bad_errors=hide_bad_errors,
+		err_thresh=err_thresh
+	)
+
+	# interpolate theory (yfit) onto data x-grid
+	# (assumes monotonic x, already sorted)
+	x_data = da["x"]
+	y_data = da["y"]
+	yerr_data = da["yerr"]
+
+	x_th = th["x"]
+	y_th = th["yfit"]
+
+	# guard: if theory x-range doesn't cover data x-range, np.interp clamps to endpoints;
+	# instead mask to overlap region for cleaner physics.
+	x_min = max(np.min(x_data), np.min(x_th))
+	x_max = min(np.max(x_data), np.max(x_th))
+	overlap = (x_data >= x_min) & (x_data <= x_max)
+
+	if not np.any(overlap):
+		raise ValueError("No overlap in x-range between chosen data and theory curves (after any delta_f shifts).")
+
+	x_use = x_data[overlap]
+	y_use = y_data[overlap]
+	yerr_use = yerr_data[overlap] if yerr_data is not None else None
+
+	yth_interp = np.interp(x_use, x_th, y_th)
+
+	diff = yth_interp - y_use
+
+	fig, ax = plt.subplots(figsize=(8, 4.8))
+	ax.axhline(0, color="grey", lw=1)
+
+	if yerr_use is not None:
+		ax.errorbar(
+			x_use, diff,
+			yerr=np.abs(yerr_use),
+			fmt=".", capsize=0,
+			label=rf"curr{theory_curr} theory $-$ curr{data_curr} data"
+		)
+	else:
+		ax.plot(x_use, diff, ".", label=rf"curr{theory_curr} theory $-$ curr{data_curr} data")
+
+	ax.set_xlabel("Linear Detuning (GHz)")
+	ax.set_ylabel("Theory − Data")
+	ax.legend()
+	ax.minorticks_on()
+	fig.tight_layout()
+	plt.show()
+
+# -----------------------------
+# Helper: fetch delta_f from fit_params csv
+# -----------------------------
+def get_delta_f_shift(curr: int, apply_x_shift: bool, param_files: dict) -> float:
+	"""
+	Returns the x-shift (GHz) to apply for this curr.
+
+	Rules:
+	- If apply_x_shift is False: return 0
+	- Otherwise:
+		* read fitted delta_f from fit_params_curr{curr}.csv (if present)
+		* apply hard-coded override/additive shift for chosen currs
+	"""
+	if not apply_x_shift:
+		return 0.0
+
+	fitted = 0.0
+	param_path = param_files.get(curr)
+
+	if param_path and param_path.exists():
+		dfp = pd.read_csv(param_path)
+		row = dfp.loc[dfp["parameter"] == "delta_f"]
+		if not row.empty:
+			try:
+				fitted = float(row.iloc[0]["value"])
+			except Exception:
+				fitted = 0.0
+
+	# ---- hard-coded custom shift (curr9 etc.) ----
+	if curr in CUSTOM_DELTA_F_OVERRIDE_GHZ:
+		custom = float(CUSTOM_DELTA_F_OVERRIDE_GHZ[curr])
+		if CUSTOM_DELTA_F_IS_ADDITIVE:
+			return fitted + custom
+		else:
+			return custom
+
+	return fitted
 
 # -----------------------------
 # Main
@@ -301,23 +552,27 @@ def main():
 
 	show_hist = (input("Show Gaussian histogram beside each residual panel? (Y/n, default Y): ").strip().lower() != "n")
 
-	# -----------------------------
-	# Helper: fetch delta_f from fit_params csv
-	# -----------------------------
-	def get_delta_f_shift(curr: int) -> float:
-		if not apply_x_shift:
-			return 0.0
-		param_path = param_files.get(curr)
-		if not param_path or (not param_path.exists()):
-			return 0.0
-		dfp = pd.read_csv(param_path)
-		row = dfp.loc[dfp["parameter"] == "delta_f"]
-		if row.empty:
-			return 0.0
-		try:
-			return float(row.iloc[0]["value"])
-		except Exception:
-			return 0.0
+	do_subtract = (input("Plot theory - data subtraction curve? (y/N, default N): ").strip().lower() == "y")
+
+	if do_subtract:
+		raw_sub = input("Subtraction: enter 'theory_curr data_curr' (default '8 9'): ").strip()
+		if raw_sub == "":
+			theory_curr, data_curr = 8, 9
+		else:
+			parts = [int(x) for x in raw_sub.replace(",", " ").split()]
+			if len(parts) != 2:
+				raise ValueError("Please enter exactly two integers: theory_curr data_curr")
+			theory_curr, data_curr = parts
+
+		plot_theory_minus_data(
+			curve_files=curve_files,
+			param_files=param_files,
+			apply_x_shift=apply_x_shift,
+			hide_bad_errors=hide_bad_errors,
+			theory_curr=theory_curr,
+			data_curr=data_curr,
+			err_thresh=0.03
+		)
 
 	# -----------------------------
 	# Load all curves once (so we can reuse for main + residuals)
@@ -367,7 +622,7 @@ def main():
 			resid = resid[order]
 
 		# x-shift correction (delta_f)
-		dshift = get_delta_f_shift(curr)
+		dshift = get_delta_f_shift(curr, apply_x_shift=apply_x_shift, param_files=param_files)
 		if dshift != 0.0:
 			print(f"curr{curr}: applying delta_f shift = {dshift:.6g} GHz")
 			x = x + dshift
@@ -453,7 +708,7 @@ def main():
 
 		ax_main.plot(x, yfit_off, "-", linewidth=2, label=f"curr{curr} theory")
 
-	ax_main.set_ylabel("Transmission (baseline-corrected)" + (" (normalised)" if normalise else ""))
+	ax_main.set_ylabel("Transmission" + (" (normalised)" if normalise else ""))
 	ax_main.legend()
 	ax_main.minorticks_on()
 
@@ -508,10 +763,10 @@ def main():
 
 	# X-label only on bottom-most left plot axis
 	if n_res > 0:
-		res_axes[-1].set_xlabel("UV Detuning (GHz)")
+		res_axes[-1].set_xlabel("Linear Detuning (GHz)")
 		plt.setp(ax_main.get_xticklabels(), visible=False)
 	else:
-		ax_main.set_xlabel("UV Detuning (GHz)")
+		ax_main.set_xlabel("Linear Detuning (GHz)")
 
 	fig.tight_layout()
 	plt.show()

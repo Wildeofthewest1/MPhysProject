@@ -103,7 +103,12 @@ elif curr == 7:
 	BASELINE_ORDER = 2
 
 elif curr == 9:
-	frequencies    = pd.read_csv("frequencies7A.csv")
+	frequencies    = pd.read_csv("frequencies8ASD.csv")
+	transmissions  = pd.read_csv("SubDoppler8A.csv")
+	BASELINE_ORDER = 2
+
+elif curr == 10:
+	frequencies    = pd.read_csv("frequencies8ASD.csv")
 	transmissions  = pd.read_csv("SubDoppler8A.csv")
 	BASELINE_ORDER = 2
 
