@@ -899,6 +899,36 @@ df.to_csv("frequencies7A.csv", index=False)
 
 #powers_ = np.array((1.00, 1.02, 1.02, 1.02, 1.02, 1.00, 1.02, 1.02, 1.01, 1.01, 1.02, 1.01, 1.01, 1.00, 1.01, 1.02, 1.02, 1.03, 1.02, 1.02, 1.02, 1.02, 1.02, 1.01, 1.01, 1.01, 1.02, 1.02, 1.01, 1.02, 1.02, 1.01, 1.01, 1.02, 1.01, 1.01, 1.01, 1.02, 1.02, 1.02, 1.02, 1.01, 1.02, 1.02, 1.02, 1.04, 1.03, 1.04, 1.04, 1.04, 1.04, 1.05, 1.04, 1.04, 1.03, 1.04, 1.05, 1.05, 1.04, 1.04, 1.04, 1.05, 1.05, 1.05, 1.05, 1.05, 1.07, 1.06, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.06, 1.05, 1.06, 1.07, 1.07, 1.06, 1.07, 1.07, 1.06, 1.07, 1.07, 1.05, 1.06, 1.07, 1.06, 1.07, 1.07, 1.07, 1.06, 1.07, 1.07, 1.06, 1.07, 1.07, 1.08, 1.07, 1.07, 1.06, 1.07, 1.07, 1.07, 1.08, 1.08, 1.08, 1.08, 1.07, 1.08, 1.08, 1.07, 1.08, 1.09, 1.08, 1.07, 1.07, 1.08, 1.08, 1.08, 1.08, 1.09, 1.07, 1.08, 1.08, 1.08, 1.08, 1.09, 1.09, 1.08, 1.09, 1.08, 1.08, 1.08, 1.08, 1.07, 1.08, 1.08, 1.08, 1.09, 1.10, 1.10, 1.08, 1.10, 1.09, 1.10, 1.09, 1.10, 1.09, 1.08, 1.08, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.10, 1.11, 1.10, 1.10, 1.10, 1.10, 1.11, 1.10, 1.11, 1.10, 1.1, 1.11, 1.11, 1.11, 1.10, 1.11, 1.11, 1.11, 1.11, 1.10, 1.10, 1.11, 1.11, 1.11, 1.11, 1.10, 1.11, 1.11, 1.12, 1.12, 1.11, 1.11, 1.11, 1.12, 1.10, 1.12, 1.12, 1.11, 1.12, 1.12, 1.13, 1.11, 1.12, 1.12, 1.12, 1.12, 1.12, 1.11, 1.11, 1.1, 1.13, 1.13, 1.13, 1.13, 1.12, 1.13, 1.12, 1.12, 1.13, 1.13, 1.13, 1.13, 1.12, 1.13, 1.13, 1.12, 1.11, 1.1, 1.11, 1.13, 1.13, 1.13, 1.13, 1.13, 1.13, 1.13, 1.14, 1.14, 1.15, 1.13, 1.14, 1.14, 1.13, 1.14, 1.15, 1.13, 1.13, 1.13, 1.14, 1.13, 1.13, 1.13, 1.14, 1.13, 1.13, 1.13, 1.13, 1.13, 1.13, 1.14, 1.13, 1.15, 1.13, 1.13, 1.13, 1.15, 1.13, 1.14, 1.14, 1.15, 1.15, 1.15, 1.13, 1.15, 1.17, 1.15, 1.14, 1.14, 1.15, 1.15, 1.14, 1.16, 1.15, 1.16, 1.15, 1.15, 1.15, 1.15, 1.16, 1.17, 1.15, 1.16, 1.14, 1.15, 1.16, 1.16, 1.16, 1.15, 1.16, 1.16, 1.15, 1.16, 1.16, 1.16, 1.15, 1.16, 1.17, 1.16, 1.16, 1.17, 1.16, 1.16, 1.18, 1.15, 1.16, 1.15, 1.16, 1.16, 1.17, 1.17, 1.17, 1.17, 1.17, 1.16, 1.16, 1.17, 1.18, 1.17, 1.17, 1.17, 1.17, 1.17, 1.17, 1.17, 1.18, 1.17, 1.17, 1.18, 1.17, 1.19, 1.18, 1.17, 1.19, 1.18, 1.18, 1.17, 1.18, 1.17, 1.17, 1.19, 1.19, 1.19, 1.19, 1.19, 1.18, 1.18, 1.19, 1.19, 1.19, 1.19, 1.20, 1.19, 1.19, 1.19, 1.19, 1.19, 1.19, 1.19, 1.18, 1.19, 1.19, 1.19, 1.20, 1.19, 1.19, 1.19, 1.19, 1.20, 1.19, 1.20, 1.19, 1.19, 1.18, 1.19, 1.20, 1.21, 1.19, 1.20, 1.21, 1.20, 1.21, 1.20, 1.19, 1.19, 1.21, 1.21, 1.20, 1.20, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.19, 1.21, 1.22, 1.21, 1.20, 1.22, 1.21, 1.19, 1.21, 1.21, 1.21, 1.19, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.20, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.20, 1.21, 1.21, 1.22, 1.21, 1.22, 1.21, 1.22, 1.21, 1.22, 1.20, 1.22, 1.21, 1.23, 1.23, 1.21, 1.22, 1.23, 1.23, 1.22, 1.23, 1.23, 1.23, 1.22, 1.24, 1.23, 1.23, 1.22, 1.23, 1.23, 1.24, 1.23, 1.23, 1.23, 1.23, 1.23, 1.23, 1.24, 1.23, 1.23, 1.23, 1.23, 1.23, 1.24, 1.24, 1.23, 1.23, 1.23, 1.23, 1.23, 1.22, 1.22, 1.21, 1.21, 1.21, 1.21, 1.21, 1.21, 1.19, 1.19, 1.18, 1.17, 1.17, 1.17, 1.17, 1.17, 1.17, 1.16, 1.17))
 
+from typing import Sequence, List
+
+def add_missing_minutes(times):
+    """
+    Given an array of times in seconds-within-the-minute (minutes omitted),
+    return absolute times by adding 60s per detected minute wrap.
+
+    A new minute is detected when times[i+1] < times[i].
+
+    Example:
+        [10, 20, 40, 50, 1, 4] -> [10, 20, 40, 50, 61, 64]
+    """
+    if not times:
+        return []
+
+    out: List[float] = []
+    minute = 0
+
+    for i, t in enumerate(times):
+        # If this is not the first element, check if we wrapped since previous
+        if i > 0 and times[i] < times[i - 1]:
+            minute += 1
+
+        out.append(t + 60 * minute)
+
+    return np.array(out)
+
+times11 = (13.40, 39.41, 46.90, 53.89, 1.64, 9.00, 17.59, 27.47, 36.62, 46.67, 56.59, 8.03, 17.40, 30.73, 40.78, 55.60, 10.23, 26.15, 33.93, 42.55, 52.21, 0.42, 7.91, 17.59, 27.18, 36.84, 48.20, 4.92, 19.58, 33.90, 47.90, 57.53, 7.45, 16.97, 29.06, 37.90, 46.67, 7.35, 28.35, 41.68, 52.98, 9.44, 23.35, 41.78, 53.59, 7.09, 20.40, 33.50, 50.65, 6.06, 19.12, 37.36, 51.22, 7.32, 27.76, 41.46, 2.64, 20.24, 29.26, 41.36, 57.16, 29.23, 44.61, 11.59, 37.45, 2.76, 18.24, 36.36, 49.96, 1.91, 14.94, 36.08, 57.90, 25.45, 47.71, 10.03, 27.11, 46.72, 18.18, 54.36, 12.93, 52.89, 28.59)
+times22 = (22*60+30.31, 23*60+34.99, 24*60+47.23, 26*60+18.47, 27*60+20.18, 29*60+16.67, 31*60+01.93, 32*60+12.35, 34*60+16.70, 37*60+38.64, 0)
+times2 = np.concatenate([add_missing_minutes(times11), np.array(times22)])
 # ----------------------------------------------------
 # Helper: Load Tektronix CSV (TIME, CH1, CH2)
 # ----------------------------------------------------
@@ -1171,7 +1201,7 @@ def divided_error_and_mean(ch1, ch2, bg1__, bg2__):
 
 import glob
 #14-22
-for k in range(-8,-7):
+for k in range(23,24):
 	print(k)
 	first = k
 
@@ -1221,6 +1251,8 @@ for k in range(-8,-7):
 		folder = "SILVERWEAKPROBENEW/M8/"
 	elif first == 22:
 		folder = "SILVERWEAKPROBENEW/M9/"
+	elif first == 23:
+		folder = "TransmissionTimeNew/"
 	elif first == -1:
 		folder = "SPEC30MICROWATT/8A/"
 	elif first == -2:
@@ -1396,6 +1428,8 @@ for k in range(-8,-7):
 			xs = freq2det(frequencies7A)
 		elif first == -8:
 			xs = freq2det(frequencies8ASD)
+	if first == 23:
+		xs = times2
 
 	y1 = averages1_means# - np.abs(background1_mean))
 	#y2 = np.abs(np.abs(averages2_means) - np.abs(background2_mean))
@@ -1501,7 +1535,7 @@ for k in range(-8,-7):
 		df.to_csv("transmission3.csv", index=False)
 	elif first == 5:
 		df.to_csv("WeakProbeTransmissions.csv", index=False)
-	elif first >= 6:
+	elif first >= 6 and first != 23:
 		df.to_csv("WeakProbeTransmissions{}.csv".format(first-4), index=False)
 	elif first == -1:
 		df.to_csv("Spec30MicroWatts.csv", index=False)
@@ -1525,6 +1559,19 @@ for k in range(-8,-7):
 		df.to_csv("Spec15MicW7A.csv", index=False)
 	elif first == -8:
 		df.to_csv("SubDoppler8A.csv", index=False)
+	elif first == 23:
+		NormalisationPoint = transmission[-1]
+		transmission = transmission[:-1]/NormalisationPoint
+		transmission_err = transmission_err[:-1]/NormalisationPoint
+		times2 = times2[:-1]
+
+		df = pd.DataFrame({
+		"Transmission": transmission,
+		"Transmissionerr": transmission_err,
+		"Times": times2
+		})
+		df.to_csv("TransmissionTimeNew.csv", index=False)
+		print("saved to csv aaa")
 	######## save to csv
 
 	print("saved to csv")
@@ -1540,17 +1587,67 @@ for k in range(-8,-7):
 		#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 		plt.xlabel("Detuning (GHz)")
 		plt.ylabel("Transmission")
-	elif first == 3:
-		print(np.max(transmission))
-		print(np.min(transmission))
-		plt.errorbar(xs, transmission/np.max(transmission),
-					yerr=np.abs(transmission_err/np.max(transmission)),
-					marker='o')
+	
+
+	elif first == 23:
+		from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+		import numpy as np
+		xs = times2
+		x_minutes = xs / 60
+
+		fig, ax = plt.subplots()
+
+		ax.errorbar(x_minutes,
+					transmission,
+					yerr=np.abs(transmission_err),
+					marker='.')
+
+		ax.set_xlabel("Time (Minutes)")
+		ax.set_ylabel("Transmission")
+		ax.set_xscale("log")
+		# ---- Create inset ----
+		axins = inset_axes(
+			ax,
+			width="45%",
+			height="40%",
+			loc="lower left",
+			bbox_to_anchor=(0.09, 0.15, 1, 1),
+			bbox_transform=ax.transAxes
+		)
+
+		# Determine last x minutes
+		max_time = np.max(x_minutes)
+		mask = x_minutes >= 10
+
 		
-		plt.ylim(0,1.1)
-		plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-		plt.xlabel("Time (Minutes)")
-		plt.ylabel("Transmission")
+
+		axins.errorbar(x_minutes[mask],
+					transmission[mask],
+					yerr=np.abs(transmission_err[mask]),
+					marker='.', capsize= 3)
+		
+		axins.axhline(0.2852, color = "red", linestyle = "--", alpha = 0.5)
+
+		ax.axhline(0.2852, color = "red", linestyle = "--", alpha = 0.5)
+
+		#axins.set_title("Last 15 min", fontsize=9)
+		axins.tick_params(labelsize=8)
+
+		#ax.indicate_inset_zoom(axins, edgecolor="red")
+
+		rect, connectors = ax.indicate_inset_zoom(axins, edgecolor="red")
+
+		## Hide all but the first connector
+		#for c in connectors[1:]:
+		#	c.set_visible(False)
+		#print(connectors)
+
+		connectors[0].set_visible(False)
+		connectors[1].set_visible(True)
+		connectors[2].set_visible(False)
+		connectors[3].set_visible(False)
+
+		plt.show()
 	elif first >= 5:
 		print(np.max(transmission))
 		print(np.min(transmission))
@@ -1603,4 +1700,4 @@ for k in range(-8,-7):
 			#plt.ylim([0, 1.1])
 			#plt.xlim([-8.5,8.5])
 
-		plt.show()
+	plt.show()

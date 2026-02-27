@@ -17,7 +17,7 @@ FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
 Ag107ShiftDefault = 229.24#400#1000.0
 Ag109ShiftDefault = -246.76#-Ag107ShiftDefault #0.0
 
-curr = 9
+curr = 8
 
 BASELINE_ORDER   = 4   # 0..7 polynomial degree
 MAX_BASELINE_ORDER = 7

@@ -378,7 +378,7 @@ ax_main.text(x=3.9, y=0.32-0.05,
 
 ax_main.set_ylabel("Transmission")
 ax_main.set_ylim([0.15, 1.1])
-ax_main.set_xlim([-3, 4])
+ax_main.set_xlim([-3.5, 4.5])
 
 ###########################################################
 # RESIDUAL SUBPLOT
@@ -401,6 +401,71 @@ ax_res.set_ylabel("Residuals\n(normalised)")
 ax_res.set_xlabel("Linear Detuning (GHz)")
 
 plt.subplots_adjust(hspace=0.05)
+
+# -----------------------------
+# Add side histogram (Gaussian mini plot) without moving existing axes
+# -----------------------------
+# Freeze current figure/axes geometry AFTER subplots_adjust
+orig_fig_w, orig_fig_h = fig.get_size_inches()
+pos_main = ax_main.get_position().frozen()
+pos_res  = ax_res.get_position().frozen()
+
+# Extend canvas to the right (inches)
+extra_width_in = 2.2
+new_fig_w = orig_fig_w + extra_width_in
+fig.set_size_inches(new_fig_w, orig_fig_h, forward=True)
+
+def _keep_physical_bbox(pos, old_w, old_h, new_w, new_h):
+    """
+    Keep an axes the same physical size (inches) after resizing the figure.
+    """
+    x0_in = pos.x0 * old_w
+    y0_in = pos.y0 * old_h
+    w_in  = pos.width  * old_w
+    h_in  = pos.height * old_h
+    return [x0_in / new_w, y0_in / new_h, w_in / new_w, h_in / new_h]
+
+# Re-apply so ax_main and ax_res stay fixed in physical size/location
+ax_main.set_position(_keep_physical_bbox(pos_main, orig_fig_w, orig_fig_h, new_fig_w, orig_fig_h))
+ax_res .set_position(_keep_physical_bbox(pos_res,  orig_fig_w, orig_fig_h, new_fig_w, orig_fig_h))
+
+# Now place histogram flush to the right of the residuals axis
+res_pos = ax_res.get_position().frozen()
+pad = 0.01          # small gap
+hist_width = 0.10   # fraction of total NEW figure width
+
+ax_hist = fig.add_axes(
+    [res_pos.x1 + pad, res_pos.y0, hist_width, res_pos.height],
+    sharey=ax_res
+)
+
+# Data (residuals should already be ~N(0,1) if normalised correctly)
+res = np.asarray(residuals)
+res = res[np.isfinite(res)]
+
+# Bin width = 1 sigma
+rmin = min(np.floor(res.min()), -4)
+rmax = max(np.ceil(res.max()),  4)
+edges = np.arange(rmin - 0.5, rmax + 0.5 + 1e-9, 1.0)
+
+# Horizontal histogram
+ax_hist.hist(
+    res, bins=edges, density=True,
+    orientation='horizontal',
+    alpha=0.6, edgecolor='black', linewidth=0.8
+)
+
+# Ideal N(0,1) PDF overlay
+ys = np.linspace(edges[0], edges[-1], 400)
+pdf = (1.0 / np.sqrt(2.0 * np.pi)) * np.exp(-0.5 * ys**2)
+ax_hist.plot(pdf, ys, lw=2, color='red')
+
+# Cosmetics
+ax_hist.axhline(0, color='grey', lw=1)
+ax_hist.set_xlabel("PDF")
+ax_hist.set_xlim(left=0)
+ax_hist.tick_params(direction='in', top=True, right=True)
+plt.setp(ax_hist.get_yticklabels(), visible=False)
 
 #plt.savefig("FinalFig111.png", dpi=600, bbox_inches='tight')
 
