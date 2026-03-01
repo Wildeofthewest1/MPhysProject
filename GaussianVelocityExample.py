@@ -33,7 +33,7 @@ m = 6.6335209e-26
 sigma = np.sqrt(kB * T / m)      # broad (Doppler) width
 sigma_narrow = sigma / 8         # dip width
 
-mu = -0.5 * sigma                 # <-- VARIABLE: dip centre (offset) in m/s
+mu = -1 * sigma                 # <-- VARIABLE: dip centre (offset) in m/s
 
 dip_fraction = 0.7             # dip peak as a fraction of broad height at mu (0..1 is sensible)
 
@@ -113,6 +113,6 @@ plt.vlines(-mu, y_mu_neg, y_top, color="blue", label="Probe Beam at +v")
 
 plt.fill_between(v, counts_with_dip, color = "grey", alpha = 1)
 
-#plt.legend()
+plt.legend()
 plt.tight_layout()
 plt.show()

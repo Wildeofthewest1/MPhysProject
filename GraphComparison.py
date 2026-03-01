@@ -15,6 +15,27 @@ rcParams['ytick.right'] = True
 rcParams['xtick.minor.visible'] = True
 rcParams['ytick.minor.visible'] = True
 
+# =====================================================
+# Custom colour palette (data colours)
+# Use any Matplotlib-valid colour specs:
+#   - hex strings: "#1f77b4"
+#   - named colours: "tab:blue"
+#   - RGB tuples: (0.1, 0.2, 0.5)  each in [0,1]
+# =====================================================
+CUSTOM_COLOURS = [
+	"#1f77b4",
+	"#ff7f0e",
+	"#2ca02c",
+	"#8727d6",
+	"#ec1414",
+	"#8c564b",
+	"#e377c2",
+	"#7f7f7f",
+	"#bcbd22",
+	"#17becf",
+]
+
+pointsize = 3
 
 # =====================================================
 # Custom (hard-coded) x-shift overrides in GHz
@@ -28,7 +49,6 @@ CUSTOM_DELTA_F_OVERRIDE_GHZ = {
 # Optional: if you want "extra" shift added on top of fitted delta_f instead of overriding,
 # set this to True. Otherwise (default False) it REPLACES fitted delta_f for that curr.
 CUSTOM_DELTA_F_IS_ADDITIVE = True
-
 
 # -----------------------------
 # File finders
@@ -51,7 +71,6 @@ def find_curve_files_by_curr(folder: Path):
 
 	return found
 
-
 def find_param_files_by_curr(folder: Path):
 	"""
 	Returns dict {curr_number : Path_to_param_file}
@@ -70,7 +89,6 @@ def find_param_files_by_curr(folder: Path):
 
 	return found
 
-
 # -----------------------------
 # LaTeX helpers
 # -----------------------------
@@ -86,7 +104,6 @@ def latex_escape(s: str) -> str:
 			 .replace("^", r"\^{}")
 			 .replace("~", r"\~{}"))
 
-
 def fmt_sci(x, sig=4):
 	"""Return LaTeX math-mode scientific notation like 1.23\\times 10^{4}."""
 	if x is None:
@@ -100,13 +117,6 @@ def fmt_sci(x, sig=4):
 	mant = x / (10 ** exp)
 	# keep mantissa in [1,10)
 	return f"{mant:.{sig}g}\\times 10^{{{exp}}}"
-
-import numpy as np
-
-import numpy as np
-
-
-import numpy as np
 
 def round_err_and_match_value(val, err):
 	"""
@@ -137,7 +147,6 @@ def round_err_and_match_value(val, err):
 
 	return v_rounded, e_rounded, decimals
 
-
 def fmt_num_latex(x, sci_sig=4):
 	"""
 	Format a number for LaTeX math mode.
@@ -156,7 +165,6 @@ def fmt_num_latex(x, sci_sig=4):
 		return f"{mant:.{sci_sig}g}\\times 10^{{{exp}}}"
 	else:
 		return f"{x:g}"
-
 
 def fmt_val_err_phys(val, err, sci_sig=4):
 	"""
@@ -198,7 +206,6 @@ def fmt_val_err_phys(val, err, sci_sig=4):
 		e_str = fmt_num_latex(e_r, sci_sig=sci_sig)
 
 	return rf"\({v_str} \pm {e_str}\)"
-
 
 def build_param_table(currs, param_files, param_list=None, fitted_only=False, sig=4):
 	"""
@@ -333,7 +340,6 @@ def load_curve_for_subtraction(
 
 	return {"x": x, "y": y, "yerr": yerr, "yfit": yfit}
 
-
 def plot_theory_minus_data(
 	curve_files: dict,
 	param_files: dict,
@@ -422,6 +428,7 @@ def plot_theory_minus_data(
 # -----------------------------
 # Helper: fetch delta_f from fit_params csv
 # -----------------------------
+
 def get_delta_f_shift(curr: int, apply_x_shift: bool, param_files: dict) -> float:
 	"""
 	Returns the x-shift (GHz) to apply for this curr.
@@ -457,6 +464,48 @@ def get_delta_f_shift(curr: int, apply_x_shift: bool, param_files: dict) -> floa
 
 	return fitted
 
+def get_colour_maps(curr_list, theory_offset=4, palette=None):
+	"""
+	Deterministic maps:
+	  data_color[curr]   -> palette colours in selected order
+	  theory_color[curr] -> same palette but offset so theory != data
+
+	palette:
+	  - None => uses CUSTOM_COLOURS
+	  - otherwise: provide a list of Matplotlib-valid colour specs
+	"""
+	colors = list(palette) if palette is not None else list(CUSTOM_COLOURS)
+
+	if len(colors) == 0:
+		raise ValueError("Colour palette is empty. Add colours to CUSTOM_COLOURS.")
+
+	n = len(colors)
+
+	data_color = {curr: colors[i % n] for i, curr in enumerate(curr_list)}
+	theory_color = {curr: colors[(i + theory_offset) % n] for i, curr in enumerate(curr_list)}
+
+	return data_color, theory_color
+
+def get_marker_map(curr_list):
+	"""
+	Deterministic mapping: curr -> marker style.
+
+	Cycles through a predefined marker list.
+	"""
+	markers = [
+		"o",  # circle
+		"s",  # square
+		"^",  # triangle up
+		"D",  # diamond
+		"v",  # triangle down
+		"P",  # plus (filled)
+		"X",  # x (filled)
+		">",  # triangle right
+		"<",  # triangle left
+		"*",  # star
+	]
+
+	return {curr: markers[i % len(markers)] for i, curr in enumerate(curr_list)}
 # -----------------------------
 # Main
 # -----------------------------
@@ -532,6 +581,18 @@ def main():
 	offset = float(input("Vertical offset between traces (default 0): ").strip() or "0")
 	use_errorbars = (input("Use error bars? (Y/n, default Y): ").strip().lower() != "n")
 
+		# ---- Show options: data / theory / both ----
+	show_mode_raw = input("Show (data/theory/both)? (default both): ").strip().lower()
+	if show_mode_raw in ("", "b", "both"):
+		show_data, show_theory = True, True
+	elif show_mode_raw in ("d", "data"):
+		show_data, show_theory = True, False
+	elif show_mode_raw in ("t", "theory"):
+		show_data, show_theory = False, True
+	else:
+		print("Unrecognised option; defaulting to both.")
+		show_data, show_theory = True, True
+
 	apply_x_shift = (input("Apply x-axis correction using fitted delta_f? (Y/n, default Y): ").strip().lower() != "n")
 
 	# ---- Residual subplot options ----
@@ -549,6 +610,11 @@ def main():
 		missing_res = [c for c in residual_currs if c not in selected]
 		if missing_res:
 			raise ValueError(f"Residual curr values not in selected plot set: {missing_res}. Selected: {selected}")
+
+		# Fixed colour assignment per curr (used for main + residuals)
+	# Fixed colour assignment per curr (data + residuals share; theory separate)
+	data_color, theory_color = get_colour_maps(selected)
+	marker_map = get_marker_map(selected)
 
 	show_hist = (input("Show Gaussian histogram beside each residual panel? (Y/n, default Y): ").strip().lower() != "n")
 
@@ -689,11 +755,10 @@ def main():
 		ax_blank = fig.add_subplot(gs[0, 1])
 		ax_blank.axis("off")
 
-	# -----------------------------
 	# MAIN PLOT (uses shifted x automatically)
 	# -----------------------------
 	for i, curr in enumerate(selected):
-		x = curves[curr]["x"]          # <- already includes delta_f shift if enabled
+		x = curves[curr]["x"]
 		y = curves[curr]["y"]
 		yerr = curves[curr]["yerr"]
 		yfit = curves[curr]["yfit"]
@@ -701,12 +766,41 @@ def main():
 		y_off = y + i * offset
 		yfit_off = yfit + i * offset
 
-		if use_errorbars and (yerr is not None):
-			ax_main.errorbar(x, y_off, yerr=np.abs(yerr), fmt=".", capsize=0, label=f"curr{curr} data")
-		else:
-			ax_main.plot(x, y_off, ".", label=f"curr{curr} data")
+		cd = data_color[curr]
+		ct = theory_color[curr]
+		mk = marker_map[curr]
 
-		ax_main.plot(x, yfit_off, "-", linewidth=2, label=f"curr{curr} theory")
+		# DATA (points / errorbars)
+		if show_data:
+			if use_errorbars and (yerr is not None):
+				ax_main.errorbar(
+					x, y_off,
+					yerr=np.abs(yerr),
+					fmt=mk,
+					capsize=0,
+					label=f"curr{curr} data",
+					color=cd,
+					markersize=pointsize,
+					linestyle="none"
+				)
+			else:
+				ax_main.plot(
+					x, y_off,
+					marker=mk,
+					linestyle="none",
+					label=f"curr{curr} data",
+					color=cd,
+					markersize=pointsize
+				)
+
+		# THEORY (line)
+		if show_theory:
+			ax_main.plot(
+				x, yfit_off,
+				"-", linewidth=2,
+				label=f"curr{curr} theory",
+				color=ct
+			)
 
 	ax_main.set_ylabel("Transmission" + (" (normalised)" if normalise else ""))
 	ax_main.legend()
@@ -733,11 +827,19 @@ def main():
 			axr.minorticks_on()
 			continue
 
+		c = data_color.get(curr, None)
+		mk = marker_map.get(curr, "o")
+
 		axr.errorbar(
 			x, resid,
 			yerr=np.ones_like(resid, dtype=float),
-			fmt=".", capsize=0, markersize=4
+			fmt=mk,
+			capsize=0,
+			markersize=pointsize,
+			color=c,
+			linestyle="none"
 		)
+
 		axr.set_ylabel(f"Res (curr{curr})")
 		axr.minorticks_on()
 
@@ -754,7 +856,7 @@ def main():
 				)
 
 				ys = np.linspace(edges[0], edges[-1], 400)
-				ah.plot(gauss_pdf(ys), ys, linewidth=2)
+				ah.plot(gauss_pdf(ys), ys, linewidth=2, color = "red")
 				ah.axhline(0, linewidth=1)
 				ah.set_xlabel("PDF")
 				ah.set_xlim(left=0)
@@ -768,9 +870,11 @@ def main():
 	else:
 		ax_main.set_xlabel("Linear Detuning (GHz)")
 
+	ax_main.set_xlim(-10, 10)
+	axr.set_xlim(-10, 10)
+
 	fig.tight_layout()
 	plt.show()
-
 
 if __name__ == "__main__":
 	main()
