@@ -10,6 +10,12 @@ os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4
 print("Now running in:", os.getcwd())
 
 
+PlotDataCurve = True
+PlotTheoryCurve = True
+PlotResiduals = True
+DiffBand = True
+PlotVoigts = True
+
 fontsz = 16
 rcParams['font.family'] = 'serif' # e.g. 'sans-serif', 'monospace', etc.
 rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
@@ -189,15 +195,8 @@ def format_sci_tex(num):
 #Add data to figure
 ##########################################
 
-
-
-
-
 c = 2.99792458e8
 lambd = 328.1629601
-
-
-
 freqerr = 0.01 #0.01 GHz
 lambderr = 0.0000022
 
@@ -268,28 +267,33 @@ fig, (ax_main, ax_res) = plt.subplots(
 ###########################################################
 colours = ['deepskyblue', 'firebrick', 'purple', 'darkkhaki', 'orange', 'pink']
 
-for i in range(len(S0)-1):
-	if len(S0) >= 7:
-		color = colours[1] if i <= 2 else colours[0]
-	else:
-		color = colours[1] if i <= 1 else colours[0]
+if PlotVoigts:
 
-	ax_main.plot(theory_detuning, S0[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
-	idx = np.argmin(S0[i].real)
-	#ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
-
-for i in range(len(S0_1)-1):
-	if len(S0_1) >= 7:
-		color = colours[3] if i <= 2 else colours[2]
-	else:
-		color = colours[3] if i <= 1 else colours[2]
-
-	ax_main.plot(theory_detuning, S0_1[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
-	idx = np.argmin(S0_1[i].real)
-	#ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	for i in range(len(S0)-1):
+		if len(S0) >= 7:
+			color = colours[1] if i <= 2 else colours[0]
+		else:
+			color = colours[1] if i <= 1 else colours[0]
+		trans = S0[i].real
+		ax_main.plot(theory_detuning, trans, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+		tmin = np.min(trans)
+		idx = np.argmin(trans)
+		ax_main.vlines(theory_detuning[idx], tmin, 2, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
 
 
-ax_main.fill_between(theory_detuning, theory_curve, 1, color="lightgrey", alpha=0.5)
+	for i in range(len(S0_1)-1):
+		if len(S0_1) >= 7:
+			color = colours[3] if i <= 2 else colours[2]
+		else:
+			color = colours[3] if i <= 1 else colours[2]
+		trans = S0_1[i].real
+		ax_main.plot(theory_detuning, trans, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+		tmin = np.min(trans)
+		idx = np.argmin(trans)
+		ax_main.vlines(theory_detuning[idx], tmin, 2, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+
+
+	ax_main.fill_between(theory_detuning, theory_curve, 1, color="lightgrey", alpha=0.5)
 
 #plot theory curve and fill
 
@@ -298,7 +302,7 @@ ax_main.fill_between(theory_detuning, theory_curve, 1, color="lightgrey", alpha=
 #np.savez("theory_spectrum3.npz",theory_detuning_saved=theory_detuning,theory_curve_saved=theory_curve)
 
 # Load saved theory
-dataload = np.load("theory_spectrum.npz")
+dataload = np.load("theory_spectrum3.npz")
 #dataload = np.load("theory_spectrum2.npz")
 x2 = dataload["theory_detuning_saved"]
 y2 = dataload["theory_curve_saved"]
@@ -336,31 +340,35 @@ y1_common = y1[mask1]
 #ax_main.plot(x2, y2, color="#b22222", linestyle = "--", linewidth=1, label="Theory (Total) loaded")
 
 # Fill between them
-ax_main.fill_between(
-    x_common,
-    y1_common,
-    y2_interp,
-    color="#b22222",
-    alpha=0.25,
-    label="Difference band"
-)
+if DiffBand == True:
+	ax_main.fill_between(
+		x_common,
+		y1_common,
+		y2_interp,
+		color="#b22222",
+		alpha=0.25,
+		label="Difference band"
+	)
 
 ##################################################################################################
 
-ax_main.plot(theory_detuning, theory_curve, color="#1f4ed8"   # deep royal blue
-, linewidth=2, label="Theory (Total)")
+if PlotTheoryCurve:
+	# Theory Curve
+	ax_main.plot(theory_detuning, theory_curve, color="#1f4ed8", linewidth=2, label="Theory (Total)")# deep royal blue
 
-# Experimental data (NOW baseline-normalised using b0,b1)
-ax_main.errorbar(
-	exp_detuning,
-	exp_transmission,
-	yerr=exp_error,
-	xerr=freqerr_array,
-	fmt='x',
-	color='black',
-	label='Experiment (baseline-normalised)',
-	capsize=2
-)
+if PlotDataCurve:
+	# Experimental data (NOW baseline-normalised using b0,b1)
+	ax_main.errorbar(
+		exp_detuning,
+		exp_transmission,
+		yerr=exp_error,
+		xerr=freqerr_array,
+		fmt='x',
+		color='black',
+		label='Experiment (baseline-normalised)',
+		capsize=2,
+		zorder=1
+	)
 
 ax_main.axhline(1, color='grey', lw=1)
 
@@ -384,16 +392,18 @@ ax_main.set_xlim([-3.5, 4.5])
 # RESIDUAL SUBPLOT
 ###########################################################
 ax_res.axhline(0, color='grey', linewidth=1)
-ax_res.errorbar(
-	exp_detuning,
-	residuals,
-	yerr=np.ones_like(residuals),
-	xerr=freqerr_array,
-	fmt='x',
-	color='black',
-	markersize=4,
-	capsize=2
-)
+
+if PlotResiduals:
+	ax_res.errorbar(
+		exp_detuning,
+		residuals,
+		yerr=np.ones_like(residuals),
+		xerr=freqerr_array,
+		fmt='x',
+		color='black',
+		markersize=4,
+		capsize=2
+	)
 
 print("residual mean = {}".format(np.mean(residuals)))
 
@@ -448,12 +458,13 @@ rmin = min(np.floor(res.min()), -4)
 rmax = max(np.ceil(res.max()),  4)
 edges = np.arange(rmin - 0.5, rmax + 0.5 + 1e-9, 1.0)
 
-# Horizontal histogram
-ax_hist.hist(
-    res, bins=edges, density=True,
-    orientation='horizontal',
-    alpha=0.6, edgecolor='black', linewidth=0.8
-)
+if PlotResiduals:
+	# Horizontal histogram
+	ax_hist.hist(
+		res, bins=edges, density=True,
+		orientation='horizontal',
+		alpha=0.6, edgecolor='black', linewidth=0.8
+	)
 
 # Ideal N(0,1) PDF overlay
 ys = np.linspace(edges[0], edges[-1], 400)
