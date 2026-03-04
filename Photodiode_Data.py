@@ -937,23 +937,32 @@ def load_tektronix_csv(filename):
 	with open(filename, 'r') as f:
 		lines = f.readlines()
 
-	# Locate the "TIME,CH1,CH2" header row
+	# Locate header row
 	for i, line in enumerate(lines):
 		if line.strip().startswith("TIME"):
 			header_index = i
+			header = [h.strip() for h in line.strip().split(",")]
 			break
 	else:
-		raise ValueError("Could not find TIME,CH1,CH2 header in " + filename)
+		raise ValueError("Could not find TIME header in " + filename)
 
 	# Load numerical data
 	data = np.loadtxt(filename, delimiter=",", skiprows=header_index+1)
 
-	# Extract into arrays
+	# Extract columns
 	t = data[:, 0]
 	ch1 = data[:, 1]
 	ch2 = data[:, 2]
 
-	return t, ch1, ch2
+
+
+	# Check if frequency column exists
+	if ("FREQ" in header or"FREQ_HZ" in header) and data.shape[1] >= 4:
+		freq = float(data[0, 3])/ 1e9  # same value on every row
+	else:
+		freq = None
+
+	return t, ch1, ch2, freq
 
 """
 
@@ -1270,7 +1279,7 @@ for k in range(-9,-8):
 	elif first == -8:
 		folder = "Sub_Doppler_1/With_Pump/"
 	elif first == -9:
-		folder = "Sub_Doppler_2/No_Pump/"
+		folder = "TestRun/20260304_200226/"
 	elif first == -10:
 		folder = "Sub_Doppler_2/With_Pump/"
 
@@ -1285,6 +1294,7 @@ for k in range(-9,-8):
 
 	averages1 = []
 	averages2 = []
+	FrequencyValues = []
 	background1 = 0.0
 	background2 = 0.0
 
@@ -1293,7 +1303,7 @@ for k in range(-9,-8):
 	# ----------------------------------------------------
 	bg_index = len(files)-1
 	file_csvbg = base_path + "tek" + str(bg_index).zfill(4) + "ALL.csv"
-	t_, ch1_arr_, ch2_arr_ = load_tektronix_csv(file_csvbg)
+	t_, ch1_arr_, ch2_arr_, ffffff = load_tektronix_csv(file_csvbg)
 	
 	#bg1 = np.mean(ch1_arr_)
 	#bg2 = np.mean(ch2_arr_)
@@ -1310,7 +1320,8 @@ for k in range(-9,-8):
 		file_csv = base_path + "tek" + str(i).zfill(4) + "ALL.csv"
 
 		# Load data
-		t, ch1_arr, ch2_arr = load_tektronix_csv(file_csv)
+		t, ch1_arr, ch2_arr, FrequencyValue = load_tektronix_csv(file_csv)
+		print(FrequencyValue)
 		"""
 		T, T_err, T_err_stat, T_err_bg, nblocks = transmission_mc_fast(\
 			ch1_arr, ch2_arr,\
@@ -1326,6 +1337,7 @@ for k in range(-9,-8):
 
 		#if i != len(files)-1:
 		averages1.append((T, T_err))
+		FrequencyValues.append(FrequencyValue)
 		#else: print("done")
 
 		#ch3_arr = (np.abs(ch1_arr)-bg1)/(np.abs(ch2_arr)-bg2)
@@ -1433,7 +1445,9 @@ for k in range(-9,-8):
 		elif first == -8:
 			xs = freq2det(frequencies8ASD)
 		elif first == -9:
-			xs = freq2det(frequencies8ASD)
+			print(FrequencyValues)
+			xs = freq2det(FrequencyValues)
+			#xs = np.linspace(0, 5, len(files)-1)#freq2det(frequencies8ASD)
 		elif first == -10:
 			xs = freq2det(frequencies8ASD)
 		

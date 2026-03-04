@@ -3,12 +3,10 @@ import time
 import csv
 from pathlib import Path
 from datetime import datetime
-import ctypes
-import math
-
 import numpy as np
 import pyvisa
-
+import subprocess
+import math
 
 # -----------------------------
 # User settings
@@ -19,203 +17,209 @@ TYPEFOLDERNAME = "TestRun"
 SCOPE_ADDR = "USB0::0x0699::0x0421::C020493::INSTR"
 AFG_ADDR   = "USB0::0x0699::0x0343::C023586::INSTR"
 
-WAVEMETER_PRESENT = True  # set False if not connected / not needed
-
 offset_start = 0.0
 offset_stop  = 5.0
-offset_step  = 1  # 10 mV (set to 1.0 if you want quick testing)
+offset_step  = 0.1  # V
+measurement_delay = 4  # seconds
 
-measurement_delay = 2   # seconds
+# --- Bristol wavemeter (use 32-bit helper only) ---
+WAVEMETER_PRESENT = True
+BRISTOL_HELPER = REPO_DIR / "bristol_read.py"
+BRISTOL_HELPER_PY = ["py", "-3.14-32"]   # uses your Python launcher entry
+BRISTOL_TIMEOUT_S = 2.0
+
+
+def read_bristol_lambda_nm_via_32bit(timeout_s: float = BRISTOL_TIMEOUT_S) -> float:
+    """
+    Calls bristol_read.py using 32-bit Python and returns wavelength in nm.
+    bristol_read.py MUST print only a single number (nm) or 'nan'.
+    """
+    try:
+        out = subprocess.check_output(
+            BRISTOL_HELPER_PY + [str(BRISTOL_HELPER)],
+            text=True,
+            timeout=timeout_s
+        ).strip()
+
+        if not out or out.lower() == "nan":
+            return math.nan
+        return float(out)
+    except Exception:
+        return math.nan
+
+
+def lambda_nm_to_freq_hz(lam_nm: float) -> float:
+    if not (lam_nm > 0.0) or math.isnan(lam_nm):
+        return math.nan
+    c = 299_792_458.0
+    return c / (lam_nm * 1e-9)
+
+
+def read_bristol_freq_hz_string() -> str:
+    lam_nm = read_bristol_lambda_nm_via_32bit()
+    if not (lam_nm > 0.0) or math.isnan(lam_nm):
+        return "nan"
+    c = 299_792_458.0
+    freq = c / (lam_nm * 1e-9)
+    return f"{freq:.6f}"  # or keep more decimals if you want
+
 
 # -----------------------------
-# Folder setup (always under REPO_DIR)
+# Tek helpers
 # -----------------------------
-data_dir = REPO_DIR / "Photodiode_Data" / TYPEFOLDERNAME
-data_dir.mkdir(parents=True, exist_ok=True)
-
-run_folder = data_dir / datetime.now().strftime("%Y%m%d_%H%M%S")
-run_folder.mkdir(parents=True, exist_ok=False)
-
-print("Saving data to:", run_folder)
+def tek_name(index: int) -> str:
+    return f"tek{index:04d}ALL.csv"
 
 
 # -----------------------------
-# VISA setup
+# Main
 # -----------------------------
-rm = pyvisa.ResourceManager("@ivi")
+def main():
+    # Folder setup
+    data_dir = REPO_DIR / "Photodiode_Data" / TYPEFOLDERNAME
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-scope = rm.open_resource(SCOPE_ADDR)
-afg   = rm.open_resource(AFG_ADDR)
+    run_folder = data_dir / datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_folder.mkdir(parents=True, exist_ok=False)
+    print("Saving data to:", run_folder)
 
-# More forgiving comms settings
-scope.timeout = 30000  # 30 s (ASCII waveform transfer can be slow/large)
-afg.timeout   = 5000
+    # VISA setup
+    rm = pyvisa.ResourceManager("@ivi")
+    scope = rm.open_resource(SCOPE_ADDR)
+    afg   = rm.open_resource(AFG_ADDR)
 
-# Increase chunk size so large reads don't stall
-scope.chunk_size = 1024 * 1024  # 1 MB
+    scope.timeout = 30000
+    afg.timeout   = 5000
 
-scope.read_termination = "\n"
-scope.write_termination = "\n"
-
-# Clear any old I/O state
-try:
-	scope.clear()
-except Exception:
-	pass
-
-import math
-
-wavemeter = None
-
-if WAVEMETER_PRESENT:
-
-    wavemeter_path = r"C:\Program Files (x86)\Bristol Wavelength Meter V2_31b\CLDevIFace.dll"
+    scope.chunk_size = 1024 * 1024
+    scope.read_termination = "\n"
+    scope.write_termination = "\n"
 
     try:
-        wavemeter = ctypes.CDLL(wavemeter_path)
-        print("Bristol wavemeter DLL loaded")
-    except Exception as e:
-        print("Wavemeter DLL not found, disabling wavemeter:", e)
-        WAVEMETER_PRESENT = False
+        scope.clear()
+    except Exception:
+        pass
 
-def get_wavemeter_frequency_hz():
+    def get_waveform(channel: int):
+        """
+        Export the full CURRENT waveform record using the scope's existing settings.
+        Only adjusts the transfer window (DATA:START/STOP), not acquisition.
+        """
+        scope.write(f"DATA:SOU CH{channel}")
+        scope.write("DATA:WIDTH 1")
+        scope.write("DATA:ENC ASCii")
 
-	if not WAVEMETER_PRESENT:
-		return math.nan
+        rec_len = int(float(scope.query("HOR:RECO?")))
+        scope.write("DATA:STAR 1")
+        scope.write(f"DATA:STOP {rec_len}")
 
-	try:
-		freq = ctypes.c_double()
+        n_send = int(float(scope.query("WFMOUTPRE:NR_PT?")))
 
-		# Typical Bristol DLL call
-		wavemeter.CLGetLambdaReading(ctypes.byref(freq))
+        ymult = float(scope.query("WFMOUTPRE:YMULT?"))
+        yzero = float(scope.query("WFMOUTPRE:YZERO?"))
+        yoff  = float(scope.query("WFMOUTPRE:YOFF?"))
+        xincr = float(scope.query("WFMOUTPRE:XINCR?"))
+        xzero = float(scope.query("WFMOUTPRE:XZERO?"))
 
-		return freq.value * 1e12  # convert THz → Hz if needed
+        raw = scope.query("CURVE?").strip()
+        y = np.fromstring(raw, sep=",", dtype=float)
 
-	except Exception as e:
-		print("Wavemeter read failed:", e)
-		return math.nan
+        print(f"CH{channel}: HOR:RECO={rec_len}, WFMOUTPRE:NR_PT={n_send}, received={y.size}")
 
-def safe_wavemeter_frequency_hz() -> float:
-	if not WAVEMETER_PRESENT:
-		return math.nan
-	try:
-		return float(get_wavemeter_frequency_hz())
-	except Exception as e:
-		print(f"[WAVEMETER] read failed: {e}")
-		return math.nan
+        volts = (y - yoff) * ymult + yzero
+        t = xzero + np.arange(volts.size) * xincr
+        return t, volts
 
-def tek_name(index: int) -> str:
-	return f"tek{index:04d}ALL.csv"
+    try:
+        # Quick check of wavemeter (optional but useful)
+        if WAVEMETER_PRESENT:
+            test_freq = read_bristol_freq_hz_string()
+            print(f"Wavemeter test (Hz): {test_freq}")
 
-def get_waveform(channel: int):
-	"""
-	Download a waveform from the scope using ASCII encoding (robust).
-	Returns (t, volts).
-	"""
-	scope.write(f"DATA:SOU CH{channel}")
-	scope.write("DATA:WIDTH 1")
-	scope.write("DATA:ENC ASCii")
+        # Sweep loop
+        num_measurements = int(round((offset_stop - offset_start) / offset_step)) + 1
+        print(f"Total measurements: {num_measurements}")
 
-	# Scaling (Tektronix WFMPRE)
-	ymult = float(scope.query("WFMPRE:YMULT?"))
-	yzero = float(scope.query("WFMPRE:YZERO?"))
-	yoff  = float(scope.query("WFMPRE:YOFF?"))
-	xincr = float(scope.query("WFMPRE:XINCR?"))
-	xzero = float(scope.query("WFMPRE:XZERO?"))
+        start_time = time.time()
 
-	# Stop acquisition for consistent data
-	scope.write("ACQ:STATE STOP")
-	raw = scope.query("CURVE?").strip()
-	scope.write("ACQ:STATE RUN")
+        for idx in range(num_measurements):
+            offset = offset_start + idx * offset_step
+            loop_start = time.time()
 
-	# Parse ASCII points
-	y = np.fromstring(raw, sep=",", dtype=float)
+            filename = run_folder / tek_name(idx)
+            print(f"\nMeasurement {idx+1}/{num_measurements} | offset = {offset:.3f} V -> {filename.name}")
 
-	volts = (y - yoff) * ymult + yzero
-	t = xzero + np.arange(volts.size) * xincr
-	return t, volts
+            afg.write(f"SOUR1:VOLT:OFFS {offset}")
+            time.sleep(measurement_delay)
+
+            t1, ch1 = get_waveform(1)
+            t2, ch2 = get_waveform(2)
+
+            n = min(len(t1), len(t2), len(ch1), len(ch2))
+            t = t1[:n]
+            ch1 = ch1[:n]
+            ch2 = ch2[:n]
+
+            freq_str = read_bristol_freq_hz_string()
+            print(f"Wavemeter frequency (Hz): {freq_str}")
+
+            with open(filename, "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["TIME", "CH1", "CH2", "FREQ"])
+                w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
+
+            print(f"Saved: {filename.name}")
+
+            loop_time = time.time() - loop_start
+            elapsed = time.time() - start_time
+            remaining = (num_measurements - (idx + 1)) * loop_time
+            print(f"Time/measurement: {loop_time:.2f} s | Elapsed: {elapsed/60:.2f} min | ETA: {remaining/60:.2f} min")
+
+        print("\nSweep complete.")
+
+        # Background capture
+        input("Press ENTER to take background measurement...")
+
+        bg_index = num_measurements
+        bg_file = run_folder / tek_name(bg_index)
+        print(f"Taking background -> {bg_file.name}")
+
+        time.sleep(measurement_delay)
+
+        t1, ch1 = get_waveform(1)
+        t2, ch2 = get_waveform(2)
+
+        n = min(len(t1), len(t2), len(ch1), len(ch2))
+        t = t1[:n]
+        ch1 = ch1[:n]
+        ch2 = ch2[:n]
+
+        freq_str = read_bristol_freq_hz_string()
+        print(f"Wavemeter frequency (Hz): {freq_str}")
+
+        with open(bg_file, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["TIME", "CH1", "CH2", "FREQ"])
+            w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
+
+        print(f"Background saved: {bg_file.name}")
+        print("\nMeasurement run complete.")
+
+    finally:
+        # Clean shutdown
+        try:
+            scope.close()
+        except Exception:
+            pass
+        try:
+            afg.close()
+        except Exception:
+            pass
+        try:
+            rm.close()
+        except Exception:
+            pass
 
 
-# -----------------------------
-# Sweep loop with progress / ETA
-# -----------------------------
-# -----------------------------
-# Sweep loop with Tek naming + progress
-# -----------------------------
-num_measurements = int(round((offset_stop - offset_start) / offset_step)) + 1
-print(f"Total measurements: {num_measurements}")
-
-start_time = time.time()
-
-for idx in range(num_measurements):
-	offset = offset_start + idx * offset_step
-	loop_start = time.time()
-
-	file_index = idx
-	filename = run_folder / tek_name(file_index)
-
-	print(f"\nMeasurement {idx+1}/{num_measurements} | offset = {offset:.3f} V -> {filename.name}")
-
-	# Set AFG offset
-	afg.write(f"SOUR1:VOLT:OFFS {offset}")
-
-	time.sleep(measurement_delay)
-
-	# Capture both channels
-	t1, ch1 = get_waveform(1)
-	t2, ch2 = get_waveform(2)
-
-	n = min(len(t1), len(t2), len(ch1), len(ch2))
-	t = t1[:n]
-	ch1 = ch1[:n]
-	ch2 = ch2[:n]
-
-	# Save CSV
-	freq_hz = safe_wavemeter_frequency_hz()
-	print(f"Wavemeter frequency: {freq_hz:.6e} Hz")
-
-	with open(filename, "w", newline="") as f:
-		w = csv.writer(f)
-		w.writerow(["time_s", "CH1_V", "CH2_V", "wavemeter_freq_Hz"])
-		# repeat the scalar frequency on each row (easy for downstream code)
-		w.writerows((ti, v1, v2, freq_hz) for ti, v1, v2 in zip(t, ch1, ch2))
-
-	print(f"Saved: {filename.name}")
-
-	time.sleep(measurement_delay)
-
-	loop_time = time.time() - loop_start
-	elapsed = time.time() - start_time
-	remaining = (num_measurements - (idx + 1)) * loop_time
-	print(f"Time/measurement: {loop_time:.2f} s | Elapsed: {elapsed/60:.2f} min | ETA: {remaining/60:.2f} min")
-
-print("\nSweep complete.")
-
-# -----------------------------
-# Background capture (same naming convention)
-# -----------------------------
-input("Press ENTER to take background measurement...")
-
-bg_index = num_measurements
-bg_file = run_folder / tek_name(bg_index)
-print(f"Taking background -> {bg_file.name}")
-
-time.sleep(measurement_delay)  # optional: settle before background
-
-t1, ch1 = get_waveform(1)
-t2, ch2 = get_waveform(2)
-
-n = min(len(t1), len(t2), len(ch1), len(ch2))
-t = t1[:n]
-ch1 = ch1[:n]
-ch2 = ch2[:n]
-
-freq_hz = safe_wavemeter_frequency_hz()
-
-with open(bg_file, "w", newline="") as f:
-    w = csv.writer(f)
-    w.writerow(["time_s", "CH1_V", "CH2_V", "wavemeter_freq_Hz"])
-    w.writerows((ti, v1, v2, freq_hz) for ti, v1, v2 in zip(t, ch1, ch2))
-
-print(f"Background saved: {bg_file.name}")
-print("\nMeasurement run complete.")
+if __name__ == "__main__":
+    main()
