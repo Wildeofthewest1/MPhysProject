@@ -1201,7 +1201,7 @@ def divided_error_and_mean(ch1, ch2, bg1__, bg2__):
 
 import glob
 #14-22
-for k in range(23,24):
+for k in range(-9,-8):
 	print(k)
 	first = k
 
@@ -1269,6 +1269,10 @@ for k in range(23,24):
 		folder = "Spec15MicrowattNEW/7A/"
 	elif first == -8:
 		folder = "Sub_Doppler_1/With_Pump/"
+	elif first == -9:
+		folder = "Sub_Doppler_2/No_Pump/"
+	elif first == -10:
+		folder = "Sub_Doppler_2/With_Pump/"
 
 	base_path = "Photodiode_Data/" + folder
 
@@ -1428,6 +1432,11 @@ for k in range(23,24):
 			xs = freq2det(frequencies7A)
 		elif first == -8:
 			xs = freq2det(frequencies8ASD)
+		elif first == -9:
+			xs = freq2det(frequencies8ASD)
+		elif first == -10:
+			xs = freq2det(frequencies8ASD)
+		
 	if first == 23:
 		xs = times2
 
@@ -1559,6 +1568,10 @@ for k in range(23,24):
 		df.to_csv("Spec15MicW7A.csv", index=False)
 	elif first == -8:
 		df.to_csv("SubDoppler8A.csv", index=False)
+	elif first == -9:
+		df.to_csv("SubDoppler2_NP_8A.csv", index=False)
+	elif first == -10:
+		df.to_csv("SubDoppler2_WP_8A.csv", index=False)
 	elif first == 23:
 		NormalisationPoint = transmission[-1]
 		transmission = transmission[:-1]/NormalisationPoint
