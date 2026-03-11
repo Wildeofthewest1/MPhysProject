@@ -4,6 +4,7 @@ import os
 from matplotlib import rcParams
 from matplotlib.ticker import AutoMinorLocator
 import pandas as pd
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 # ----------------------------------------------------
 # Matplotlib styling
@@ -1210,7 +1211,7 @@ def divided_error_and_mean(ch1, ch2, bg1__, bg2__):
 
 import glob
 #14-22
-for k in range(-9,-8):
+for k in range(-2,-1):
 	print(k)
 	first = k
 
@@ -1265,7 +1266,7 @@ for k in range(-9,-8):
 	elif first == -1:
 		folder = "SPEC30MICROWATT/8A/"
 	elif first == -2:
-		folder = "WPWM/"
+		folder = "WPWM/"####
 	elif first == -3:
 		folder = "Spec15MicrowattNWM/8A/"
 	elif first == -4:
@@ -1279,9 +1280,9 @@ for k in range(-9,-8):
 	elif first == -8:
 		folder = "Sub_Doppler_1/With_Pump/"
 	elif first == -9:
-		folder = "TestRun/20260304_200226/"
+		folder = "SubDoppler_3/No_Pump/"
 	elif first == -10:
-		folder = "Sub_Doppler_2/With_Pump/"
+		folder = "SubDoppler_3/With_Pump/"
 
 	base_path = "Photodiode_Data/" + folder
 
@@ -1337,7 +1338,8 @@ for k in range(-9,-8):
 
 		#if i != len(files)-1:
 		averages1.append((T, T_err))
-		FrequencyValues.append(FrequencyValue)
+		if FrequencyValue is not None:
+			FrequencyValues.append(FrequencyValue)
 		#else: print("done")
 
 		#ch3_arr = (np.abs(ch1_arr)-bg1)/(np.abs(ch2_arr)-bg2)
@@ -1404,6 +1406,10 @@ for k in range(-9,-8):
 		def freq2det(array):
 			return -np.array(array)*2 + (c / (328.1629601))
 
+		df = pd.DataFrame({
+			"freq": FrequencyValues
+		})
+
 		if first == 0:
 			xs = freq2det(frequencies)# - 633
 		elif first == 1:
@@ -1445,11 +1451,13 @@ for k in range(-9,-8):
 		elif first == -8:
 			xs = freq2det(frequencies8ASD)
 		elif first == -9:
-			print(FrequencyValues)
+			#print(FrequencyValues)
 			xs = freq2det(FrequencyValues)
+			df.to_csv("frequencies8A_SD3_NP.csv", index=False)
 			#xs = np.linspace(0, 5, len(files)-1)#freq2det(frequencies8ASD)
 		elif first == -10:
-			xs = freq2det(frequencies8ASD)
+			xs = freq2det(FrequencyValues)
+			df.to_csv("frequencies8A_SD3_WP.csv", index=False)
 		
 	if first == 23:
 		xs = times2
@@ -1583,9 +1591,9 @@ for k in range(-9,-8):
 	elif first == -8:
 		df.to_csv("SubDoppler8A.csv", index=False)
 	elif first == -9:
-		df.to_csv("SubDoppler2_NP_8A.csv", index=False)
+		df.to_csv("SubDoppler3_NP_8A.csv", index=False)
 	elif first == -10:
-		df.to_csv("SubDoppler2_WP_8A.csv", index=False)
+		df.to_csv("SubDoppler3_WP_8A.csv", index=False)
 	elif first == 23:
 		NormalisationPoint = transmission[-1]
 		transmission = transmission[:-1]/NormalisationPoint
@@ -1605,7 +1613,7 @@ for k in range(-9,-8):
 
 	print(len(transmission))#,len(xs))
 
-	if first == 1 or first == 4 or first <= -1:
+	if first == 1 or first == 4 or first <= -1 and first != -2:
 		#print(np.max(transmission))
 		#print(np.min(transmission))
 		plt.errorbar(xs, transmission, yerr=np.abs(transmission_err),fmt='.')#/np.max(transmission))
@@ -1615,10 +1623,22 @@ for k in range(-9,-8):
 		plt.xlabel("Detuning (GHz)")
 		plt.ylabel("Transmission")
 	
+	elif first == -2:
+
+		fig, ax = plt.subplots()
+
+		ax.errorbar(xs,
+					transmission,
+					yerr=np.abs(transmission_err),
+					marker='.', linestyle = "")
+
+		ax.set_xlabel("Power ($Micro W)")
+		ax.set_ylabel("Transmission")
+
+		ax.axhline(3.5, color = "red", linestyle = "--", alpha = 0.5)	
 
 	elif first == 23:
-		from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-		import numpy as np
+		#####Lamp on time plot
 		xs = times2
 		x_minutes = xs / 60
 
@@ -1709,10 +1729,6 @@ for k in range(-9,-8):
 			plt.savefig("TransmissionTime", dpi=300, bbox_inches='tight')
 		elif first == -1:
 			plt.savefig("30MicWNewData", dpi=300, bbox_inches='tight')
-		elif first == -2:
-			plt.xlabel("Power (Microwatts)")
-			#plt.xscale("log")
-			#plt.savefig("WeakProbe222.png", dpi=300, bbox_inches='tight')
 		elif first == -3:
 			plt.savefig("15MicWNewData", dpi=300, bbox_inches='tight')
 		elif first == -4:

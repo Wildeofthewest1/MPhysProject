@@ -17,7 +17,7 @@ FIT_BASELINE     = True  # fit baseline polynomial multiplicatively
 Ag107ShiftDefault = 229.24#400#1000.0
 Ag109ShiftDefault = -246.76#-Ag107ShiftDefault #0.0
 
-curr = 11
+curr = 8
 
 BASELINE_ORDER   = 4   # 0..7 polynomial degree
 MAX_BASELINE_ORDER = 15
@@ -108,14 +108,14 @@ elif curr == 9:
 	BASELINE_ORDER = 2
 
 elif curr == 10:
-	frequencies    = pd.read_csv("frequencies8ASD.csv")
-	transmissions  = pd.read_csv("SubDoppler8A.csv")
+	frequencies    = pd.read_csv("frequencies8A_SD3_NP.csv")
+	transmissions  = pd.read_csv("SubDoppler3_NP_8A.csv")
 	BASELINE_ORDER = 2
 
 elif curr == 11:
-	frequencies    = pd.read_csv("frequencies8ASD.csv")
-	transmissions  = pd.read_csv("SubDoppler2_NP_8A.csv")
-	BASELINE_ORDER = 7
+	frequencies    = pd.read_csv("frequencies8A_SD3_WP.csv")
+	transmissions  = pd.read_csv("SubDoppler3_WP_8A.csv")
+	BASELINE_ORDER = 2
 
 FITRESULT_ORDER = get_fitresult_order()
 

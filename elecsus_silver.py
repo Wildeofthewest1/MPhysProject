@@ -34,18 +34,37 @@ E_in=np.array([1,0,0]) #Horizontal Linear Light input. We define E_in = [Ex,Ey,E
 
 choice = 1 #0 = Rb, 1 = Ag, 2 = K, 3 = Na, 4 = Cs
 
-fitresults = (130.23, 1.679e+16, 0.45, 267.99, -246.76)
-
 #Temp = 200.00#147.53
 #AgNumberDensity = 1.671e+16#1.678e+16
 #AgIsotopeShift = (229.24,-246.76)#476 #MHz
 first = 2
 AgCustomGroundPopulation = True
+SubDoppler = True
 
-Temp = fitresults[0]
-AgNumberDensity = fitresults[1]
-customa = fitresults[2]
-AgIsotopeShift = (fitresults[3],fitresults[4])
+pump_params = {
+    'pol': 'Left',
+    'probe_pol': 'Left',
+    'I_pump': 2030,   # W/m^2
+    'I_probe': 13.2,  # W/m^2
+    'I_sat': 867,    # W/m^2
+	'eta_pump': 0.05
+}
+subdop_params = {
+    'Nv': 301,
+    'vmax_sigma': 5.0,
+    'gamma_transit_Hz': 2.0e4,
+    'gamma_vcc_Hz': 1.0e8,
+    'vcc_width': 20.0,
+    'include_excited_vcc': False,
+    'n_vcc_steps': 3,
+    'beta_vcc': 1,
+}
+
+Temp = 130.23
+AgNumberDensity = 1.679e+16
+customa = 0.45
+AgIsotopeShift = (229.24, -246.76)
+TotalIsotopeShift = AgIsotopeShift[0]-AgIsotopeShift[1]
 
 deltaf = 1.09
 
@@ -93,16 +112,47 @@ else:
 Zoom = True
 Zoom = False
 
-p_dict={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 1, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift}#, 'Ag107frac':100}
-p_dict2={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 2, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift}
-p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 0, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift}
+p_dict={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 1, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift, "SubDoppler": SubDoppler, 'pump_params': pump_params, 'subdop_params': subdop_params}#, 'Ag107frac':100}
+p_dict2={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 2, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift, "SubDoppler": SubDoppler, 'pump_params': pump_params, 'subdop_params': subdop_params}
+p_dict3={'Elem':element,'Dline':Dline,'T':Temp,'lcell':lcell,'Bfield':Bfield,'Btheta':Btheta, 'AgNumden': AgNumberDensity, 'Isotope_Combination': 0, 'CustomPop': custpop, 'AgIsotope_shift': AgIsotopeShift, "SubDoppler": SubDoppler, 'pump_params': pump_params, 'subdop_params': subdop_params}
 
-#A 75 mm cell of natural abundance Rb at 20C. No bfield and hence no angle Btheta between the k-vector and the mag field. 
-[S0,S1,S2,S3,E_out,Ix,Iy]=mf.get_spectra(Detuning,E_in,p_dict,outputs=['S0','S1','S2','S3','E_out','Ix','Iy'])
+# ---------------------------------------------------------
+# Always compute weak-probe spectra
+# ---------------------------------------------------------
+#p_dict_wp  = dict(p_dict)
+#p_dict2_wp = dict(p_dict2)
+p_dict3_wp = dict(p_dict3)
 
-[S0_1] = mf.get_spectra(Detuning,E_in,p_dict2,outputs=['S0'])
+#p_dict_wp['SubDoppler'] = False
+#p_dict2_wp['SubDoppler'] = False
+p_dict3_wp['SubDoppler'] = False
 
-[S0_2] = mf.get_spectra(Detuning,E_in,p_dict3,outputs=['S0'])
+#[S0_wp, S1_wp, S2_wp, S3_wp, E_out_wp, Ix_wp, Iy_wp] = mf.get_spectra(
+#	Detuning, E_in, p_dict_wp, outputs=['S0','S1','S2','S3','E_out','Ix','Iy']
+#)
+
+#[S0_1_wp] = mf.get_spectra(Detuning, E_in, p_dict2_wp, outputs=['S0'])
+[S0_2_wp] = mf.get_spectra(Detuning, E_in, p_dict3_wp, outputs=['S0'])
+
+# ---------------------------------------------------------
+# Optionally compute sub-Doppler spectra as well
+# ---------------------------------------------------------
+if SubDoppler:
+	p_dict_sd  = dict(p_dict)
+	p_dict2_sd = dict(p_dict2)
+	p_dict3_sd = dict(p_dict3)
+
+	p_dict_sd['SubDoppler'] = True
+	p_dict2_sd['SubDoppler'] = True
+	p_dict3_sd['SubDoppler'] = True
+
+	#[S0_sd] = mf.get_spectra(Detuning, E_in, p_dict_sd, outputs=['S0'])
+	#[S0_1_sd] = mf.get_spectra(Detuning, E_in, p_dict2_sd, outputs=['S0'])
+	[S0_2_sd] = mf.get_spectra(Detuning, E_in, p_dict3_sd, outputs=['S0'])
+
+	#ChiPlus_sub, ChiMinus_sub, ChiZ_sub, comps = mf.calc_chi_subdoppler_agd2(
+	#	Detuning, p_dict3_sd, pump_params, subdop_params, return_components=True
+	#)
 
 line = int(Dline[-1])
 
@@ -237,59 +287,15 @@ transmissions3 = pd.read_csv("transmission3.csv")
 c = 2.99792458e8
 lambd = 328.1629601#(22)
 
-if first == 0:
-	freq = np.array(frequencies["freq1"])
-	trans = np.array(transmissions1["Transmission1"])
-	transerr = np.array(transmissions1["Transmission1err"])
-	adj = 0.011
-elif first == 1:
-	freq = np.array(frequencies2["freq2"])
-	trans = np.array(transmissions2["Transmission2"])
-	transerr = np.array(transmissions2["Transmission2err"])
-	adj = 0
-elif first == 2:
-	freq = np.array(frequencies3["freq3"])
-	trans = np.array(transmissions3["Transmission3"])
-	transerr = np.array(transmissions3["Transmission3err"])
-	adj = 0
-
-freqerr = 0.01 #0.01GHz
-lambderr = 0.0000022
-
-freq = -np.array(freq)*2 + (c / (lambd)) + deltaf#1.09
 
 df_dx = -2
 df_dl = -c / (lambd**2)
 
-freq_total_err = np.sqrt(
-	(df_dx * freqerr)**2 +
-	(df_dl * lambderr)**2
-)
-
-# Make an array matching freq
-freqerr_array = np.full_like(freq, freq_total_err)
-
-#print(freq, trans, transerr)
-"""
-plt.errorbar(freq, trans/(np.max(trans)-adj),
-			 yerr=np.abs(transerr/(np.max(trans)-adj)),
-			 xerr=freqerr_array,
-			 marker='o',label = "data")
-
-if Zoom:
-	plt.ylim([0.2, 1.1])
-	plt.xlim([-2.5,3])
-else:
-	plt.ylim([0, 1.1])
-	plt.xlim([-8.5,8.5])
-"""
 
 #plt.yticks([0.00, 0.25, 0.50, 0.75, 1.00])
 #plt.yticks([0.4, 0.5, 0.6, 0.7 ,0.8,0.9, 1.0])
 #plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 #plt.xticks([ -8, -6, -4, -2, 0, 2, 4, 6, 8])
-
-#plt.savefig(r"TheoryExperiment1.png", dpi=600, bbox_inches='tight')
 
 #plt.legend()
 
@@ -297,151 +303,101 @@ else:
 
 
 ###############################################
-# THEORETICAL CURVE (already computed above)
+# THEORETICAL CURVES
 ###############################################
 
-theory_curve = S0_2[0].real  # theoretical total transmission
-theory_detuning = Detuning / 1e3   # in GHz
+theory_detuning = Detuning / 1e3   # GHz
+
+theory_curve_wp = S0_2_wp[0].real
+
+if SubDoppler:
+	theory_curve_sd = S0_2_sd[0].real
 
 ###############################################
-# EXPERIMENTAL DATA PROCESSING
-###############################################
-if first != 2:
-	exp_detuning = freq
-	exp_transmission = trans / (np.max(trans) - adj)
-	exp_error = np.abs(transerr / (np.max(trans) - adj))
-else:
-	# ----------------------------------------------------
-	# Remove region for fitting
-	# ----------------------------------------------------
-	exclude = (freq > -5) & (freq < 2.5)
-	mask = ~exclude
-
-	# Linear fit to CH1
-	coeffs1 = np.polyfit(freq[mask], trans[mask], 1)
-	m1, c1 = coeffs1
-	fit_line1 = np.polyval(coeffs1, freq)
-
-	exp_detuning = freq
-	exp_transmission = trans / fit_line1
-	exp_error = np.abs(transerr / fit_line1)
-
-###############################################
-# INTERPOLATE THEORY ONTO EXPERIMENTAL POINTS
+# FIGURE
 ###############################################
 
-# Ensure frequencies match
-theory_interp = np.interp(exp_detuning, theory_detuning, theory_curve)
+fig, ax_main = plt.subplots(figsize=(8, 5))
 
-###############################################
-# COMPUTE NORMALISED RESIDUALS
-###############################################
-
-residuals = (exp_transmission - theory_interp) / exp_error
-
-###############################################
-# 2-SUBPLOT FIGURE
-###############################################
-
-fig, (ax_main, ax_res) = plt.subplots(
-	2, 1,
-	figsize=(8, 6),
-	sharex=True,
-	gridspec_kw={"height_ratios": [3, 1]}
-)
-
-###########################################################
-# MAIN TRANSMISSION PLOT
-###########################################################
-# Plot theoretical curves
 colours = ['deepskyblue', 'firebrick', 'purple', 'darkkhaki', 'orange', 'pink']
 
-for i in range(len(S0)-1):
-	if len(S0) >= 7:
+# =========================================================
+# WEAK-PROBE COMPONENTS
+# =========================================================
+
+"""
+for i in range(len(S0_wp) - 1):
+	if len(S0_wp) >= 7:
 		color = colours[1] if i <= 2 else colours[0]
 	else:
 		color = colours[1] if i <= 1 else colours[0]
 
-	ax_main.plot(theory_detuning, S0[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
-	idx = np.argmin(S0[i].real)
-	ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
+	trans = S0_wp[i].real
+	ax_main.plot(
+		theory_detuning, trans,
+		color=color, linewidth=1.5, alpha=0.8, linestyle="--"
+	)
 
-# Isotopes
-for i in range(len(S0_1)-1):
-	if len(S0_1) >= 7:
+	tmin = np.min(trans)
+	idx = np.argmin(trans)
+	ax_main.vlines(
+		theory_detuning[idx], tmin, 2,
+		color=color, linewidth=1.5, alpha=0.8, linestyle="--"
+	)
+
+for i in range(len(S0_1_wp) - 1):
+	if len(S0_1_wp) >= 7:
 		color = colours[3] if i <= 2 else colours[2]
 	else:
 		color = colours[3] if i <= 1 else colours[2]
 
-	ax_main.plot(theory_detuning, S0_1[i].real, color=color, linewidth=1.5, alpha=0.8, linestyle="--")
-	idx = np.argmin(S0_1[i].real)
-	ax_main.axvline(theory_detuning[idx], color=color, linewidth=1.5, alpha=0.8, linestyle="--")
-
-# Total theoretical transmission
-ax_main.plot(theory_detuning, theory_curve, color="grey", linewidth=1.5, label="Theory (Total)")
-ax_main.fill_between(theory_detuning, theory_curve, 1, color="lightgrey", alpha=0.5)
-
-# Experimental data
-ax_main.errorbar(
-	exp_detuning,
-	exp_transmission,
-	yerr=exp_error,
-	xerr=freqerr_array,
-	fmt='x',
-	color='black',
-	label='Experiment',
-	capsize = 2
-)
-
-if first == 2:
+	trans = S0_1_wp[i].real
 	ax_main.plot(
-		exp_detuning,
-		fit_line1/fit_line1,
-		label=f"CH1 fit\n y = {m1:.3g}x + {c1:.3g}",
-		color='red'
+		theory_detuning, trans,
+		color=color, linewidth=1.5, alpha=0.8, linestyle="--"
 	)
 
-ax_main.axhline(1, color='grey', lw=1)
+	tmin = np.min(trans)
+	idx = np.argmin(trans)
+	ax_main.vlines(
+		theory_detuning[idx], tmin, 2,
+		color=color, linewidth=1.5, alpha=0.8, linestyle="--"
+	)
 
-#ax_main.text(x=3.05, y=0.49-0.05, s=element+"-D$_{}$".format(line), fontsize=fontsz+2, ha = "right", va = "center") ##Ag-D2
-ax_main.text(x=3.9, y=0.4-0.05, s=element+"-D$_{}$".format(line)+r" @{}$\degree$C".format(Temp), fontsize=fontsz+1, ha = "right", va = "center") ##Temperature
-#ax_main.text(x=3.9, y=0.4-0.05, s="lcell = {} mm".format(lcell*1000), fontsize=fontsz+2, ha = "right", va = "center") ##Temperature
-ax_main.text(x=3.9, y=0.32-0.05, s="$N_D/L_{cell}$ = "+format_sci_tex(AgNumberDensity/lcell), fontsize=fontsz-3, ha = "right", va = "center") ##Temperature
-
-ax_main.set_ylabel("Transmission")
-ax_main.set_ylim([0.2, 1.1])
-ax_main.set_xlim([-3, 4])
-
-#ax_main.legend()
-
-###########################################################
-# RESIDUAL SUBPLOT
-###########################################################
-
-ax_res.axhline(0, color='grey', linewidth=1)
-ax_res.errorbar(
-	exp_detuning,
-	residuals,
-	yerr=np.ones_like(residuals),
-	xerr=freqerr_array,
-	fmt='x',
-	color='black',
-	markersize=4,
-	capsize = 2
+"""
+# Weak-probe total
+ax_main.plot(
+	theory_detuning, theory_curve_wp,
+	color="black", linewidth=1.8, label="Weak probe total"
 )
 
-print("residual mean = {}".format(np.mean(residuals)))
 
-ax_res.set_ylabel("Residuals\n(normalised)")
-ax_res.set_xlabel("Linear Detuning (GHz)")
+# =========================================================
+# SUB-DOPPLER TOTAL + OPTIONAL DIFFERENTIAL CONTRIBUTIONS
+# =========================================================
+if SubDoppler:
+	# Optional: sub-Doppler differential contributions
+	colour_index = 0
 
-#ax_res.set_ylim([-3, 3])  # Adjust as needed
+	# Sub-Doppler total
+	ax_main.plot(
+		theory_detuning, theory_curve_sd,
+		color="grey", linewidth=1.8, label="Sub-Doppler total"
+	)
 
-###########################################################
-# SAVE & SHOW
-###########################################################
+	ax_main.fill_between(
+		theory_detuning, theory_curve_sd, 1,
+		color="lightgrey", alpha=0.4
+	)
 
-plt.subplots_adjust(hspace=0.05)
+# Reference line
+ax_main.axhline(1, color='grey', lw=1)
 
-#plt.savefig("FinalFittedMainPlot1.png", dpi=600, bbox_inches='tight')
+ax_main.set_ylabel("Transmission")
+ax_main.set_xlabel("Linear Detuning (GHz)")
+ax_main.set_ylim([0, 1.1])
+ax_main.set_xlim([-3, 4])
+
+ax_main.legend()
+
 plt.show()

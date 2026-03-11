@@ -12,15 +12,17 @@ import math
 # User settings
 # -----------------------------
 REPO_DIR = Path(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
-TYPEFOLDERNAME = "TestRun"
+TYPEFOLDERNAME = "SubDoppler_3"
 
 SCOPE_ADDR = "USB0::0x0699::0x0421::C020493::INSTR"
 AFG_ADDR   = "USB0::0x0699::0x0343::C023586::INSTR"
 
-offset_start = 0.0
-offset_stop  = 5.0
-offset_step  = 0.1  # V
 measurement_delay = 4  # seconds
+
+# --- Desired scope scales ---
+TIME_PER_DIV_S = 0.1      # 100 ms/div
+CH1_SCALE_VDIV = 0.02     # 20 mV/div
+CH2_SCALE_VDIV = 0.02     # 20 mV/div
 
 # --- Bristol wavemeter (use 32-bit helper only) ---
 WAVEMETER_PRESENT = True
@@ -30,196 +32,219 @@ BRISTOL_TIMEOUT_S = 2.0
 
 
 def read_bristol_lambda_nm_via_32bit(timeout_s: float = BRISTOL_TIMEOUT_S) -> float:
-    """
-    Calls bristol_read.py using 32-bit Python and returns wavelength in nm.
-    bristol_read.py MUST print only a single number (nm) or 'nan'.
-    """
-    try:
-        out = subprocess.check_output(
-            BRISTOL_HELPER_PY + [str(BRISTOL_HELPER)],
-            text=True,
-            timeout=timeout_s
-        ).strip()
+	"""
+	Calls bristol_read.py using 32-bit Python and returns wavelength in nm.
+	bristol_read.py MUST print only a single number (nm) or 'nan'.
+	"""
+	try:
+		out = subprocess.check_output(
+			BRISTOL_HELPER_PY + [str(BRISTOL_HELPER)],
+			text=True,
+			timeout=timeout_s
+		).strip()
 
-        if not out or out.lower() == "nan":
-            return math.nan
-        return float(out)
-    except Exception:
-        return math.nan
-
-
-def lambda_nm_to_freq_hz(lam_nm: float) -> float:
-    if not (lam_nm > 0.0) or math.isnan(lam_nm):
-        return math.nan
-    c = 299_792_458.0
-    return c / (lam_nm * 1e-9)
+		if not out or out.lower() == "nan":
+			return math.nan
+		return float(out)
+	except Exception:
+		return math.nan
 
 
 def read_bristol_freq_hz_string() -> str:
-    lam_nm = read_bristol_lambda_nm_via_32bit()
-    if not (lam_nm > 0.0) or math.isnan(lam_nm):
-        return "nan"
-    c = 299_792_458.0
-    freq = c / (lam_nm * 1e-9)
-    return f"{freq:.6f}"  # or keep more decimals if you want
+	lam_nm = read_bristol_lambda_nm_via_32bit()
+	if not (lam_nm > 0.0) or math.isnan(lam_nm):
+		return "nan"
+	c = 299_792_458.0
+	freq = c / (lam_nm * 1e-9)
+	return f"{freq:.6f}"
 
 
 # -----------------------------
 # Tek helpers
 # -----------------------------
 def tek_name(index: int) -> str:
-    return f"tek{index:04d}ALL.csv"
+	return f"tek{index:04d}ALL.csv"
+
+
+def build_offsets() -> np.ndarray:
+	seg1 = np.round(np.arange(0.00, 1.80 + 1e-12, 0.10), 2)   # 0.00 .. 1.80
+	seg2 = np.round(np.arange(1.81, 3.80 + 1e-12, 0.01), 2)   # 1.81 .. 3.80
+	seg3 = np.round(np.arange(3.90, 5.00 + 1e-12, 0.10), 2)   # 3.90 .. 5.00
+
+	offsets = np.concatenate([seg1, seg2, seg3])
+	return offsets
+
+
+def configure_scope(scope):
+	"""
+	Set scope horizontal + vertical scales:
+	  - 100 ms/div (10 divisions => 1s total)
+	  - 20 mV/div on CH1 and CH2
+	"""
+	# Horizontal: 0.1 s/div
+	scope.write(f"HOR:MAIN:SCA {TIME_PER_DIV_S}")
+
+	# Vertical scales: 0.02 V/div
+	scope.write(f"CH1:SCA {CH1_SCALE_VDIV}")
+	scope.write(f"CH2:SCA {CH2_SCALE_VDIV}")
+
+	# (Optional) Make sure both channels are on
+	scope.write("SEL:CH1 ON")
+	scope.write("SEL:CH2 ON")
 
 
 # -----------------------------
 # Main
 # -----------------------------
 def main():
-    # Folder setup
-    data_dir = REPO_DIR / "Photodiode_Data" / TYPEFOLDERNAME
-    data_dir.mkdir(parents=True, exist_ok=True)
+	# Folder setup
+	data_dir = REPO_DIR / "Photodiode_Data" / TYPEFOLDERNAME
+	data_dir.mkdir(parents=True, exist_ok=True)
 
-    run_folder = data_dir / datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_folder.mkdir(parents=True, exist_ok=False)
-    print("Saving data to:", run_folder)
+	run_folder = data_dir / datetime.now().strftime("%Y%m%d_%H%M%S")
+	run_folder.mkdir(parents=True, exist_ok=False)
+	print("Saving data to:", run_folder)
 
-    # VISA setup
-    rm = pyvisa.ResourceManager("@ivi")
-    scope = rm.open_resource(SCOPE_ADDR)
-    afg   = rm.open_resource(AFG_ADDR)
+	# VISA setup
+	rm = pyvisa.ResourceManager("@ivi")
+	scope = rm.open_resource(SCOPE_ADDR)
+	afg   = rm.open_resource(AFG_ADDR)
 
-    scope.timeout = 30000
-    afg.timeout   = 5000
+	scope.timeout = 30000
+	afg.timeout   = 5000
 
-    scope.chunk_size = 1024 * 1024
-    scope.read_termination = "\n"
-    scope.write_termination = "\n"
+	scope.chunk_size = 1024 * 1024
+	scope.read_termination = "\n"
+	scope.write_termination = "\n"
 
-    try:
-        scope.clear()
-    except Exception:
-        pass
+	try:
+		scope.clear()
+	except Exception:
+		pass
 
-    def get_waveform(channel: int):
-        """
-        Export the full CURRENT waveform record using the scope's existing settings.
-        Only adjusts the transfer window (DATA:START/STOP), not acquisition.
-        """
-        scope.write(f"DATA:SOU CH{channel}")
-        scope.write("DATA:WIDTH 1")
-        scope.write("DATA:ENC ASCii")
+	# Apply the scope scales you asked for
+	configure_scope(scope)
 
-        rec_len = int(float(scope.query("HOR:RECO?")))
-        scope.write("DATA:STAR 1")
-        scope.write(f"DATA:STOP {rec_len}")
+	def get_waveform(channel: int):
+		"""
+		Export the full CURRENT waveform record using the scope's existing settings.
+		Only adjusts the transfer window (DATA:START/STOP), not acquisition.
+		"""
+		scope.write(f"DATA:SOU CH{channel}")
+		scope.write("DATA:WIDTH 1")
+		scope.write("DATA:ENC ASCii")
 
-        n_send = int(float(scope.query("WFMOUTPRE:NR_PT?")))
+		rec_len = int(float(scope.query("HOR:RECO?")))
+		scope.write("DATA:STAR 1")
+		scope.write(f"DATA:STOP {rec_len}")
 
-        ymult = float(scope.query("WFMOUTPRE:YMULT?"))
-        yzero = float(scope.query("WFMOUTPRE:YZERO?"))
-        yoff  = float(scope.query("WFMOUTPRE:YOFF?"))
-        xincr = float(scope.query("WFMOUTPRE:XINCR?"))
-        xzero = float(scope.query("WFMOUTPRE:XZERO?"))
+		n_send = int(float(scope.query("WFMOUTPRE:NR_PT?")))
 
-        raw = scope.query("CURVE?").strip()
-        y = np.fromstring(raw, sep=",", dtype=float)
+		ymult = float(scope.query("WFMOUTPRE:YMULT?"))
+		yzero = float(scope.query("WFMOUTPRE:YZERO?"))
+		yoff  = float(scope.query("WFMOUTPRE:YOFF?"))
+		xincr = float(scope.query("WFMOUTPRE:XINCR?"))
+		xzero = float(scope.query("WFMOUTPRE:XZERO?"))
 
-        print(f"CH{channel}: HOR:RECO={rec_len}, WFMOUTPRE:NR_PT={n_send}, received={y.size}")
+		raw = scope.query("CURVE?").strip()
+		y = np.fromstring(raw, sep=",", dtype=float)
 
-        volts = (y - yoff) * ymult + yzero
-        t = xzero + np.arange(volts.size) * xincr
-        return t, volts
+		print(f"CH{channel}: HOR:RECO={rec_len}, WFMOUTPRE:NR_PT={n_send}, received={y.size}")
 
-    try:
-        # Quick check of wavemeter (optional but useful)
-        if WAVEMETER_PRESENT:
-            test_freq = read_bristol_freq_hz_string()
-            print(f"Wavemeter test (Hz): {test_freq}")
+		volts = (y - yoff) * ymult + yzero
+		t = xzero + np.arange(volts.size) * xincr
+		return t, volts
 
-        # Sweep loop
-        num_measurements = int(round((offset_stop - offset_start) / offset_step)) + 1
-        print(f"Total measurements: {num_measurements}")
+	try:
+		# Quick check of wavemeter (optional but useful)
+		if WAVEMETER_PRESENT:
+			test_freq = read_bristol_freq_hz_string()
+			print(f"Wavemeter test (Hz): {test_freq}")
 
-        start_time = time.time()
+		# Build your custom sweep list
+		offsets = build_offsets()
+		num_measurements = len(offsets)
+		print(f"Total measurements: {num_measurements}")
 
-        for idx in range(num_measurements):
-            offset = offset_start + idx * offset_step
-            loop_start = time.time()
+		start_time = time.time()
 
-            filename = run_folder / tek_name(idx)
-            print(f"\nMeasurement {idx+1}/{num_measurements} | offset = {offset:.3f} V -> {filename.name}")
+		for idx, offset in enumerate(offsets):
+			loop_start = time.time()
 
-            afg.write(f"SOUR1:VOLT:OFFS {offset}")
-            time.sleep(measurement_delay)
+			filename = run_folder / tek_name(idx)
+			print(f"\nMeasurement {idx+1}/{num_measurements} | offset = {offset:.3f} V -> {filename.name}")
 
-            t1, ch1 = get_waveform(1)
-            t2, ch2 = get_waveform(2)
+			afg.write(f"SOUR1:VOLT:OFFS {offset}")
+			time.sleep(measurement_delay)
 
-            n = min(len(t1), len(t2), len(ch1), len(ch2))
-            t = t1[:n]
-            ch1 = ch1[:n]
-            ch2 = ch2[:n]
+			t1, ch1 = get_waveform(1)
+			t2, ch2 = get_waveform(2)
 
-            freq_str = read_bristol_freq_hz_string()
-            print(f"Wavemeter frequency (Hz): {freq_str}")
+			n = min(len(t1), len(t2), len(ch1), len(ch2))
+			t = t1[:n]
+			ch1 = ch1[:n]
+			ch2 = ch2[:n]
 
-            with open(filename, "w", newline="") as f:
-                w = csv.writer(f)
-                w.writerow(["TIME", "CH1", "CH2", "FREQ"])
-                w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
+			freq_str = read_bristol_freq_hz_string()
+			print(f"Wavemeter frequency (Hz): {freq_str}")
 
-            print(f"Saved: {filename.name}")
+			with open(filename, "w", newline="") as f:
+				w = csv.writer(f)
+				w.writerow(["TIME", "CH1", "CH2", "FREQ"])
+				w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
 
-            loop_time = time.time() - loop_start
-            elapsed = time.time() - start_time
-            remaining = (num_measurements - (idx + 1)) * loop_time
-            print(f"Time/measurement: {loop_time:.2f} s | Elapsed: {elapsed/60:.2f} min | ETA: {remaining/60:.2f} min")
+			print(f"Saved: {filename.name}")
 
-        print("\nSweep complete.")
+			loop_time = time.time() - loop_start
+			elapsed = time.time() - start_time
+			remaining = (num_measurements - (idx + 1)) * loop_time
+			print(f"Time/measurement: {loop_time:.2f} s | Elapsed: {elapsed/60:.2f} min | ETA: {remaining/60:.2f} min")
 
-        # Background capture
-        input("Press ENTER to take background measurement...")
+		print("\nSweep complete.")
 
-        bg_index = num_measurements
-        bg_file = run_folder / tek_name(bg_index)
-        print(f"Taking background -> {bg_file.name}")
+		# Background capture
+		input("Press ENTER to take background measurement...")
 
-        time.sleep(measurement_delay)
+		bg_index = num_measurements
+		bg_file = run_folder / tek_name(bg_index)
+		print(f"Taking background -> {bg_file.name}")
 
-        t1, ch1 = get_waveform(1)
-        t2, ch2 = get_waveform(2)
+		time.sleep(measurement_delay)
 
-        n = min(len(t1), len(t2), len(ch1), len(ch2))
-        t = t1[:n]
-        ch1 = ch1[:n]
-        ch2 = ch2[:n]
+		t1, ch1 = get_waveform(1)
+		t2, ch2 = get_waveform(2)
 
-        freq_str = read_bristol_freq_hz_string()
-        print(f"Wavemeter frequency (Hz): {freq_str}")
+		n = min(len(t1), len(t2), len(ch1), len(ch2))
+		t = t1[:n]
+		ch1 = ch1[:n]
+		ch2 = ch2[:n]
 
-        with open(bg_file, "w", newline="") as f:
-            w = csv.writer(f)
-            w.writerow(["TIME", "CH1", "CH2", "FREQ"])
-            w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
+		freq_str = read_bristol_freq_hz_string()
+		print(f"Wavemeter frequency (Hz): {freq_str}")
 
-        print(f"Background saved: {bg_file.name}")
-        print("\nMeasurement run complete.")
+		with open(bg_file, "w", newline="") as f:
+			w = csv.writer(f)
+			w.writerow(["TIME", "CH1", "CH2", "FREQ"])
+			w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
 
-    finally:
-        # Clean shutdown
-        try:
-            scope.close()
-        except Exception:
-            pass
-        try:
-            afg.close()
-        except Exception:
-            pass
-        try:
-            rm.close()
-        except Exception:
-            pass
+		print(f"Background saved: {bg_file.name}")
+		print("\nMeasurement run complete.")
+
+	finally:
+		# Clean shutdown
+		try:
+			scope.close()
+		except Exception:
+			pass
+		try:
+			afg.close()
+		except Exception:
+			pass
+		try:
+			rm.close()
+		except Exception:
+			pass
 
 
 if __name__ == "__main__":
-    main()
+	main()

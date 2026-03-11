@@ -30,106 +30,109 @@ p_dict_defaults = {	'Elem':'Rb', 'Dline':'D2',
 							'Rb85frac':72.17, 'K40frac':0.01, 'K41frac':6.73,'Ag107frac':51.839,
 							'BoltzmannFactor':True, 'AgNumden': 3e15, 'Isotope_Combination': 0,
 							'CustomPop' : None,
-							'AgIsotope_shift': (ac.Ag107_D2.IsotopeShift,ac.Ag109_D2.IsotopeShift)}
+							'AgIsotope_shift': (ac.Ag107_D2.IsotopeShift,ac.Ag109_D2.IsotopeShift),
+							'SubDoppler': False,
+							'pump_params': {},
+							'subdop_params': {}}
 
 def FreqStren(groundLevels, excitedLevels, groundDim, excitedDim,
-              Dline, hand, BoltzmannFactor=True, T=293.16, tol_MHz=1.0,
-              custom_pop=None):
-    """
-    Calculate transition frequencies and strengths by taking dot
-    products between the relevant ground / excited eigenvectors.
-    """
+			  Dline, hand, BoltzmannFactor=True, T=293.16, tol_MHz=0.01,
+			  custom_pop=None):
+	"""
+	Calculate transition frequencies and strengths by taking dot
+	products between the relevant ground / excited eigenvectors.
+	"""
 
-    transitionFrequency = []
-    transitionStrength = []
+	transitionFrequency = []
+	transitionStrength = []
 
-    # --- Population model ---
-    if custom_pop is not None:
-        BoltzDist = np.array(custom_pop, dtype=float)
-        BoltzDist /= BoltzDist.sum()
-    else:
-        if BoltzmannFactor:
-            groundEnergies = np.array(groundLevels)[:, 0].real
-            lowestEnergy = np.min(groundEnergies)
-            BoltzDist = np.exp(-(groundEnergies - lowestEnergy) * h * 1e6 / (kB * T))
-            BoltzDist /= BoltzDist.sum()
-        else:
-            BoltzDist = np.ones(groundDim) / groundDim
+	# --- Population model ---
+	if custom_pop is not None:
+		BoltzDist = np.array(custom_pop, dtype=float)
+		BoltzDist /= BoltzDist.sum()
+	else:
+		if BoltzmannFactor:
+			groundEnergies = np.array(groundLevels)[:, 0].real
+			lowestEnergy = np.min(groundEnergies)
+			BoltzDist = np.exp(-(groundEnergies - lowestEnergy) * h * 1e6 / (kB * T))
+			BoltzDist /= BoltzDist.sum()
+		else:
+			BoltzDist = np.ones(groundDim) / groundDim
 
-    # Select correct columns (polarisation)
-    if hand == 'Right':
-        bottom, top = 1, groundDim + 1
-    elif hand == 'Z':
-        bottom, top = groundDim + 1, 2 * groundDim + 1
-    elif hand == 'Left':
-        bottom, top = 2 * groundDim + 1, excitedDim + 1
-    else:
-        raise ValueError(f"Unknown hand type '{hand}'")
+	# Select correct columns (polarisation)
+	if hand == 'Right':
+		bottom, top = 1, groundDim + 1
+	elif hand == 'Z':
+		bottom, top = groundDim + 1, 2 * groundDim + 1
+	elif hand == 'Left':
+		bottom, top = 2 * groundDim + 1, excitedDim + 1
+	else:
+		raise ValueError(f"Unknown hand type '{hand}'")
 
-    # Select correct excited-state rows
-    if Dline == 'D1':
-        iteratorList = range(groundDim)
-    elif Dline == 'D2':
-        iteratorList = range(groundDim, excitedDim)
-    else:
-        raise ValueError(f"Unknown D-line '{Dline}'")
+	# Select correct excited-state rows
+	if Dline == 'D1':
+		iteratorList = range(groundDim)
+	elif Dline == 'D2':
+		iteratorList = range(groundDim, excitedDim)
+	else:
+		raise ValueError(f"Unknown D-line '{Dline}'")
 
-    # --- Compute all allowed transitions ---
-    transNo = 0
-    for gg in range(groundDim):
-        for ee in iteratorList:
-            cleb = np.dot(groundLevels[gg][1:], excitedLevels[ee][bottom:top]).real
-            cleb2 = cleb * cleb
-            if cleb2 > 0.0005:  # threshold
-                dE = (-groundLevels[gg][0].real + excitedLevels[ee][0].real)
-                s = (1.0 / 3.0) * cleb2 * BoltzDist[gg]
+	# --- Compute all allowed transitions ---
+	transNo = 0
+	for gg in range(groundDim):
+		for ee in iteratorList:
+			cleb = np.dot(groundLevels[gg][1:], excitedLevels[ee][bottom:top]).real
+			cleb2 = cleb * cleb
+			if cleb2 > 0.0005:  # threshold
+				dE = (-groundLevels[gg][0].real + excitedLevels[ee][0].real)
+				s = (1.0 / 3.0) * cleb2 * BoltzDist[gg]
 
-                transitionFrequency.append(dE)
-                transitionStrength.append(s)
+				transitionFrequency.append(dE)
+				transitionStrength.append(s)
 
-                #print(f"  Transition {transNo}: ground={gg}, excited={ee}, "
-                #      f"ΔE={dE:.2f} MHz, strength={s:.3e}")
-                transNo += 1
+				#print(f"  Transition {transNo}: ground={gg}, excited={ee}, "
+				#      f"ΔE={dE:.2f} MHz, strength={s:.3e}")
+				transNo += 1
 
-    #print(f"[FreqStren] {Dline} {hand} → {transNo} mF transitions found")
+	#print(f"[FreqStren] {Dline} {hand} → {transNo} mF transitions found")
 
-    # --- Group transitions with nearly equal ΔE (within tolerance) ---
-    tf = np.array(transitionFrequency)
-    ts = np.array(transitionStrength)
+	# --- Group transitions with nearly equal ΔE (within tolerance) ---
+	tf = np.array(transitionFrequency)
+	ts = np.array(transitionStrength)
 
-    # Sort by frequency
-    sort_idx = np.argsort(tf)
-    tf = tf[sort_idx]
-    ts = ts[sort_idx]
+	# Sort by frequency
+	sort_idx = np.argsort(tf)
+	tf = tf[sort_idx]
+	ts = ts[sort_idx]
 
-    grouped_freqs = []
-    grouped_strengths = []
+	grouped_freqs = []
+	grouped_strengths = []
 
-    # Start first group
-    current_group_freq = tf[0]
-    current_group_strength = ts[0]
+	# Start first group
+	current_group_freq = tf[0]
+	current_group_strength = ts[0]
 
-    for i in range(1, len(tf)):
-        if abs(tf[i] - current_group_freq) <= tol_MHz:
-            # same group → sum strengths only
-            current_group_strength += ts[i]
-        else:
-            # store previous group, start new one
-            grouped_freqs.append(current_group_freq)
-            grouped_strengths.append(current_group_strength)
-            current_group_freq = tf[i]
-            current_group_strength = ts[i]
+	for i in range(1, len(tf)):
+		if abs(tf[i] - current_group_freq) <= tol_MHz:
+			# same group → sum strengths only
+			current_group_strength += ts[i]
+		else:
+			# store previous group, start new one
+			grouped_freqs.append(current_group_freq)
+			grouped_strengths.append(current_group_strength)
+			current_group_freq = tf[i]
+			current_group_strength = ts[i]
 
-    # append last group
-    grouped_freqs.append(current_group_freq)
-    grouped_strengths.append(current_group_strength)
+	# append last group
+	grouped_freqs.append(current_group_freq)
+	grouped_strengths.append(current_group_strength)
 
-    grouped_freqs = np.array(grouped_freqs)
-    grouped_strengths = np.array(grouped_strengths)
+	grouped_freqs = np.array(grouped_freqs)
+	grouped_strengths = np.array(grouped_strengths)
 
-    #print(f"[FreqStren] {Dline} {hand} → {len(grouped_freqs)} unique ΔE groups (tol={tol_MHz} MHz)")
+	#print(f"[FreqStren] {Dline} {hand} → {len(grouped_freqs)} unique ΔE groups (tol={tol_MHz} MHz)")
 
-    return grouped_freqs, grouped_strengths, len(grouped_freqs)
+	return grouped_freqs, grouped_strengths, len(grouped_freqs)
 
 def add_voigt(d, DoppTemp, atomMass, wavenumber, gamma, voigtwidth,
 			  ltransno, lenergy, lstrength,
@@ -307,8 +310,6 @@ def calc_chi(X, p_dict,verbose=False):
 	else:
 		Isotope_Combination =  p_dict_defaults['Isotope_Combination']
 
-
-	
 	if verbose: print(('Temperature: ', T, '\tBfield: ', Bfield))
 	# convert X to array if needed (does nothing otherwise)
 	X = array(X)
@@ -825,6 +826,447 @@ def calc_chi(X, p_dict,verbose=False):
 
 	return totalChiPlus, totalChiMinus, totalChiZ
 
+#######################
+
+def _lorentz_complex(delta_MHz, gamma_rad_s):
+	delta_rad_s = 2.0 * np.pi * 1.0e6 * delta_MHz
+	return 1.0 / (-delta_rad_s - 1j * gamma_rad_s / 2.0)
+
+def _sat_lineshape(delta_MHz, gamma_rad_s):
+	delta_rad_s = 2.0 * np.pi * 1.0e6 * delta_MHz
+	return 1.0 / (1.0 + 4.0 * delta_rad_s**2 / gamma_rad_s**2)
+
+def _maxwell_1d(v, u):
+	"""
+	1D Maxwell-Boltzmann distribution for velocity component v.
+	u = sqrt(2 k T / m)
+	"""
+	return np.exp(-(v / u)**2) / (np.sqrt(np.pi) * u)
+
+
+def _build_velocity_grid(DoppTemp_K, atom_mass, Nv=301, vmax_sigma=4.0):
+	u = np.sqrt(2.0 * kB * DoppTemp_K / atom_mass)
+	v = np.linspace(-vmax_sigma * u, vmax_sigma * u, Nv)
+	dv = v[1] - v[0]
+	f0 = _maxwell_1d(v, u)
+	f0 /= np.sum(f0) * dv
+	return v, dv, f0, u
+
+def chi_to_S0(X, E_in, Chi, p_dict):
+	"""
+	Convert a full susceptibility triplet [ChiPlus, ChiMinus, ChiZ]
+	into a transmission spectrum S0.
+	"""
+	X = array(X)
+	ChiPlus, ChiMinus, ChiZ = Chi
+
+	E_out, _ = get_Efield(X, E_in, [ChiPlus, ChiMinus, ChiZ], p_dict)
+
+	E_in_arr = np.array(E_in)
+	if E_in_arr.shape == (3,):
+		E_in_arr = np.array([
+			np.ones(len(X)) * E_in_arr[0],
+			np.ones(len(X)) * E_in_arr[1],
+			np.ones(len(X)) * E_in_arr[2]
+		])
+	elif E_in_arr.shape != (3, len(X)):
+		raise ValueError("E_in must have shape (3,) or (3, len(X))")
+
+	I_in = (E_in_arr * E_in_arr.conjugate()).sum(axis=0)
+	S0 = ((E_out * E_out.conjugate()).sum(axis=0) / I_in).real
+	return S0
+
+def _build_gaussian_vcc_kernel(v, width):
+	"""
+	Gaussian velocity-changing collision kernel.
+	Columns are normalised so that integral over output velocity is 1:
+		W[i,j] = probability density to end in v_i given start v_j
+	"""
+	dv = v[1] - v[0]
+
+	if width <= 0:
+		W = np.zeros((len(v), len(v)))
+		np.fill_diagonal(W, 1.0 / dv)
+		return W
+
+	Vout = v[:, None]
+	Vin = v[None, :]
+	W = np.exp(-((Vout - Vin) / width)**2)
+
+	colsum = np.sum(W, axis=0) * dv
+	W /= colsum[None, :]
+	return W
+
+
+def _build_cusp_vcc_kernel(v, width):
+	"""
+	Cusp-like velocity-changing collision kernel.
+
+	A simple symmetric cusp model in velocity difference:
+		W(v_out | v_in) ~ exp(-|v_out - v_in| / width)
+
+	This is not the most general Keilson-Storer/cusp formalism, but it is a
+	good phenomenological cusp kernel and drops straight into the same solver.
+
+	Columns are normalised so that integral over output velocity is 1.
+	"""
+	dv = v[1] - v[0]
+
+	if width <= 0:
+		W = np.zeros((len(v), len(v)))
+		np.fill_diagonal(W, 1.0 / dv)
+		return W
+
+	Vout = v[:, None]
+	Vin = v[None, :]
+	W = np.exp(-np.abs(Vout - Vin) / width)
+
+	colsum = np.sum(W, axis=0) * dv
+	W /= colsum[None, :]
+	return W
+
+
+def _build_vcc_kernel(v, subdop_params):
+	"""
+	Dispatch builder for the chosen VCC kernel.
+	"""
+	kernel_type = subdop_params.get('vcc_kernel', 'gaussian').lower()
+	width = subdop_params.get('vcc_width', 20.0)
+
+	if kernel_type == 'gaussian':
+		return _build_gaussian_vcc_kernel(v, width)
+	elif kernel_type == 'cusp':
+		return _build_cusp_vcc_kernel(v, width)
+	else:
+		raise ValueError(f"Unknown vcc_kernel '{kernel_type}'. Use 'gaussian' or 'cusp'.")
+
+
+def chi_component_to_S0(X, E_in, chi_component, branch, p_dict):
+	"""
+	Convert a single chi contribution on one branch ('Left', 'Right', or 'Z')
+	into a transmission spectrum S0 by propagating it through the cell.
+
+	Parameters
+	----------
+	X : array-like
+		Detuning axis in MHz
+	E_in : array-like
+		Input electric field [Ex, Ey, Ez]
+	chi_component : 1D complex numpy array
+		Single susceptibility contribution versus detuning
+	branch : str
+		'Left', 'Right', or 'Z'
+	p_dict : dict
+		Parameter dictionary for propagation
+
+	Returns
+	-------
+	S0 : 1D numpy array
+		Transmission spectrum associated with this single chi contribution
+	"""
+	X = array(X)
+	chi_component = array(chi_component, dtype=complex)
+
+	chip = np.zeros_like(chi_component, dtype=complex)
+	chim = np.zeros_like(chi_component, dtype=complex)
+	chiz = np.zeros_like(chi_component, dtype=complex)
+
+	if branch == 'Left':
+		chip = chi_component
+	elif branch == 'Right':
+		chim = chi_component
+	elif branch == 'Z':
+		chiz = chi_component
+	else:
+		raise ValueError("branch must be 'Left', 'Right', or 'Z'")
+
+	E_out, _ = get_Efield(X, E_in, [chip, chim, chiz], p_dict)
+
+	E_in_arr = np.array(E_in)
+	if E_in_arr.shape == (3,):
+		E_in_arr = np.array([
+			np.ones(len(X)) * E_in_arr[0],
+			np.ones(len(X)) * E_in_arr[1],
+			np.ones(len(X)) * E_in_arr[2]
+		])
+	elif E_in_arr.shape != (3, len(X)):
+		raise ValueError("E_in must have shape (3,) or (3, len(X))")
+
+	I_in = (E_in_arr * E_in_arr.conjugate()).sum(axis=0)
+	S0 = ((E_out * E_out.conjugate()).sum(axis=0) / I_in).real
+
+	return S0
+
+def calc_chi_subdoppler_agd2(X, p_dict, pump_params, subdop_params, return_components=False):
+	"""
+	Silver D2 only, sub-Doppler pump-probe susceptibility.
+
+	This version is built as:
+		chi_subdop = chi_weak_probe + delta_chi_pump
+
+	so that when pump strength -> 0, it automatically reduces to the
+	ordinary weak-probe susceptibility without any hard-coded fallback.
+	"""
+
+	# -----------------------------
+	# 1. Basic parameter handling
+	# -----------------------------
+	Elem = p_dict.get('Elem', 'Ag')
+	Dline = p_dict.get('Dline', 'D2')
+	if Elem != 'Ag':
+		raise ValueError("calc_chi_subdoppler_agd2 only supports Elem='Ag'")
+	if Dline != 'D2':
+		raise ValueError("calc_chi_subdoppler_agd2 only supports Dline='D2'")
+
+	T_C = p_dict.get('T', 20.0)
+	Bfield = p_dict.get('Bfield', 0.0)
+	GammaBuf_MHz = p_dict.get('GammaBuf', 0.0)
+	shift = p_dict.get('shift', 0.0)
+	Constrain = p_dict.get('Constrain', True)
+	DoppTemp_C = p_dict.get('DoppTemp', T_C)
+	Ag107frac = p_dict.get('Ag107frac', 51.839) / 100.0
+	Ag109frac = 1.0 - Ag107frac
+	CustomPop = p_dict.get('CustomPop', None)
+	AgIsotopeShift = p_dict.get('AgIsotope_shift', p_dict_defaults['AgIsotope_shift'])
+	Isotope_Combination = p_dict.get('Isotope_Combination', 0)
+
+	if Bfield == 0.0:
+		Bfield = 1e-4
+
+	if Constrain:
+		DoppTemp_C = T_C
+
+	T_K = T_C + 273.15
+	DoppTemp_K = DoppTemp_C + 273.15
+
+	X = np.array(X, dtype=float)
+	d = X - shift
+
+	# -----------------------------
+	# 2. Pump / sub-Doppler params
+	# -----------------------------
+	pump_pol = pump_params.get('pol', 'Left')
+	probe_pol = pump_params.get('probe_pol', pump_pol)
+	eta_pump = pump_params.get('eta_pump', 1.0)
+
+	I_pump = pump_params.get('I_pump', 0.0)
+	I_probe = pump_params.get('I_probe', 0.0)
+	I_sat = pump_params.get('I_sat', 1.0)
+
+	s0_pump = I_pump / I_sat
+	s0_probe = I_probe / I_sat
+
+	Nv = subdop_params.get('Nv', 301)
+	vmax_sigma = subdop_params.get('vmax_sigma', 4.0)
+	gamma_transit_Hz = subdop_params.get('gamma_transit_Hz', 2.0e4)
+	gamma_vcc_Hz = subdop_params.get('gamma_vcc_Hz', 0.0)
+	vcc_width = subdop_params.get('vcc_width', 20.0)
+	include_excited_vcc = subdop_params.get('include_excited_vcc', False)
+	n_vcc_steps = subdop_params.get('n_vcc_steps', 1)
+	beta_vcc = subdop_params.get('beta_vcc', 1.0)
+
+	# -----------------------------
+	# 3. Atomic constants / density
+	# -----------------------------
+	transitionConst = ac.AgD2Transition
+	NDensity = p_dict.get('AgNumden', p_dict_defaults['AgNumden'])
+
+	gamma0 = 2.0 * pi * transitionConst.NatGamma * 1.0e6
+	gammaself = 2.0 * pi * gamma0 * NDensity * 1.414213562373095 * (transitionConst.wavelength / (2.0 * pi))**3
+	gamma = gamma0 + gammaself + 2.0 * pi * GammaBuf_MHz * 1.0e6
+
+	wavenumber = transitionConst.wavevectorMagnitude
+	dipole = transitionConst.dipoleStrength
+	prefactor = 2.0 * NDensity * dipole**2 / (hbar * e0)
+
+	# -----------------------------
+	# 4. Weak-probe baseline
+	# -----------------------------
+	p_dict_weak = dict(p_dict)
+	p_dict_weak['SubDoppler'] = False
+	chi_weak_plus, chi_weak_minus, chi_weak_z = calc_chi(X, p_dict_weak)
+
+	totalChiPlus = np.array(chi_weak_plus, dtype=complex, copy=True)
+	totalChiMinus = np.array(chi_weak_minus, dtype=complex, copy=True)
+	totalChiZ = np.array(chi_weak_z, dtype=complex, copy=True)
+
+	# -----------------------------
+	# 5. Transition lists
+	# -----------------------------
+	trans = {
+		'Left': [],
+		'Right': [],
+		'Z': []
+	}
+
+	if Ag107frac != 0.0:
+		Ag107atom = ac.Ag107
+		Ag107_ES = ht.Hamiltonian('Ag107', 'D2', 1.0, Bfield, AgIsotopeShift)
+
+		lE, lS, _ = FreqStren(
+			Ag107_ES.groundManifold, Ag107_ES.excitedManifold,
+			Ag107_ES.ds, Ag107_ES.dp, 'D2', 'Left',
+			True, T_K, tol_MHz=0.01, custom_pop=CustomPop
+		)
+		rE, rS, _ = FreqStren(
+			Ag107_ES.groundManifold, Ag107_ES.excitedManifold,
+			Ag107_ES.ds, Ag107_ES.dp, 'D2', 'Right',
+			True, T_K, tol_MHz=0.01, custom_pop=CustomPop
+		)
+		zE, zS, _ = FreqStren(
+			Ag107_ES.groundManifold, Ag107_ES.excitedManifold,
+			Ag107_ES.ds, Ag107_ES.dp, 'D2', 'Z',
+			True, T_K, tol_MHz=0.01, custom_pop=CustomPop
+		)
+
+		for E, S in zip(lE, lS):
+			trans['Left'].append((Ag107frac, Ag107atom.mass, E, S))
+		for E, S in zip(rE, rS):
+			trans['Right'].append((Ag107frac, Ag107atom.mass, E, S))
+		for E, S in zip(zE, zS):
+			trans['Z'].append((Ag107frac, Ag107atom.mass, E, S))
+
+	if Ag109frac != 0.0:
+		Ag109atom = ac.Ag109
+		Ag109_ES = ht.Hamiltonian('Ag109', 'D2', 1.0, Bfield, AgIsotopeShift)
+
+		lE, lS, _ = FreqStren(
+			Ag109_ES.groundManifold, Ag109_ES.excitedManifold,
+			Ag109_ES.ds, Ag109_ES.dp, 'D2', 'Left',
+			True, T_K, tol_MHz=0.01, custom_pop=CustomPop
+		)
+		rE, rS, _ = FreqStren(
+			Ag109_ES.groundManifold, Ag109_ES.excitedManifold,
+			Ag109_ES.ds, Ag109_ES.dp, 'D2', 'Right',
+			True, T_K, tol_MHz=0.01, custom_pop=CustomPop
+		)
+		zE, zS, _ = FreqStren(
+			Ag109_ES.groundManifold, Ag109_ES.excitedManifold,
+			Ag109_ES.ds, Ag109_ES.dp, 'D2', 'Z',
+			True, T_K, tol_MHz=0.01, custom_pop=CustomPop
+		)
+
+		for E, S in zip(lE, lS):
+			trans['Left'].append((Ag109frac, Ag109atom.mass, E, S))
+		for E, S in zip(rE, rS):
+			trans['Right'].append((Ag109frac, Ag109atom.mass, E, S))
+		for E, S in zip(zE, zS):
+			trans['Z'].append((Ag109frac, Ag109atom.mass, E, S))
+
+	if Isotope_Combination == 1:
+		trans = {k: [t for t in v if np.isclose(t[0], Ag107frac)] for k, v in trans.items()}
+	elif Isotope_Combination == 2:
+		trans = {k: [t for t in v if np.isclose(t[0], Ag109frac)] for k, v in trans.items()}
+
+	# -----------------------------
+	# 6. Velocity grids
+	# -----------------------------
+	grids = {}
+	if Ag107frac != 0.0:
+		v107, dv107, f0107, _ = _build_velocity_grid(
+			DoppTemp_K, ac.Ag107.mass, Nv=Nv, vmax_sigma=vmax_sigma
+		)
+		W107 = _build_vcc_kernel(v107, subdop_params)
+		grids['107'] = (v107, dv107, f0107, W107)
+
+	if Ag109frac != 0.0:
+		v109, dv109, f0109, _ = _build_velocity_grid(
+			DoppTemp_K, ac.Ag109.mass, Nv=Nv, vmax_sigma=vmax_sigma
+		)
+		W109 = _build_vcc_kernel(v109, subdop_params)
+		grids['109'] = (v109, dv109, f0109, W109)
+
+	# -----------------------------
+	# 7. Pump-induced correction
+	# -----------------------------
+	components = {'Left': [], 'Right': [], 'Z': []}
+
+	gamma_transit = 2.0 * np.pi * gamma_transit_Hz
+	gamma_vcc = 2.0 * np.pi * gamma_vcc_Hz
+
+	for branch_name in ['Left', 'Right', 'Z']:
+		chi_branch = np.zeros_like(d, dtype=complex)
+
+		# only the observed probe branch contributes to measured susceptibility
+		if branch_name != probe_pol:
+			continue
+
+		for iso_frac, atom_mass, trans_energy, trans_strength in trans[branch_name]:
+			if np.isclose(atom_mass, ac.Ag107.mass):
+				v, dv, f0, W = grids['107']
+				isotope_label = '107'
+			else:
+				v, dv, f0, W = grids['109']
+				isotope_label = '109'
+
+			chi_this_transition = np.zeros_like(d, dtype=complex)
+
+			Nv_local = len(v)
+			Iden = np.eye(Nv_local)
+
+			for j, det in enumerate(d):
+				doppler_MHz = (wavenumber * v) / (2.0 * np.pi * 1.0e6)
+
+				delta_pump = det - trans_energy - doppler_MHz
+				delta_probe = det - trans_energy + doppler_MHz
+
+				if branch_name == pump_pol:
+					s_det = s0_pump * trans_strength * _sat_lineshape(delta_pump, gamma)
+					Rp = eta_pump * 0.5 * gamma * s_det / (1.0 + s_det)
+				else:
+					Rp = np.zeros_like(delta_pump)
+
+				A = np.diag(Rp) + gamma_transit * Iden
+				b = gamma_transit * f0
+				g = np.linalg.solve(A, b)
+
+				e = Rp * g / (gamma + gamma_transit)
+				if include_excited_vcc:
+					pass
+
+				delta_pop = (g - e) - f0
+
+				delta_pop_redist = delta_pop.copy()
+				for _ in range(n_vcc_steps):
+					delta_pop_redist = (W @ delta_pop_redist) * dv
+
+				# preserve total depletion area
+				area0 = np.sum(delta_pop) * dv
+				area1 = np.sum(delta_pop_redist) * dv
+				if abs(area1) > 0:
+					delta_pop_redist *= area0 / area1
+
+				delta_pop_eff = (1.0 - beta_vcc) * delta_pop + beta_vcc * delta_pop_redist
+
+				resp = _lorentz_complex(delta_probe, gamma)
+				delta_contrib = iso_frac * trans_strength * np.sum(delta_pop_eff * resp) * dv
+
+				chi_this_transition[j] += delta_contrib
+				chi_branch[j] += delta_contrib
+
+			chi_this_transition *= prefactor
+
+			components[branch_name].append({
+				'isotope': isotope_label,
+				'energy_MHz': trans_energy,
+				'strength': trans_strength,
+				'chi': chi_this_transition.copy()
+			})
+
+		chi_branch *= prefactor
+
+		if branch_name == 'Left':
+			totalChiPlus += chi_branch
+		elif branch_name == 'Right':
+			totalChiMinus += chi_branch
+		elif branch_name == 'Z':
+			totalChiZ += chi_branch
+
+	if return_components:
+		return totalChiPlus, totalChiMinus, totalChiZ, components
+	return totalChiPlus, totalChiMinus, totalChiZ
+
+
 def get_Efield(X, E_in, Chi, p_dict, verbose=False):
 	""" 
 	Most general form of calculation - return the electric field vector E_out. 
@@ -1075,14 +1517,29 @@ def get_spectra(X, E_in, p_dict, outputs=None):
 		Pol = p_dict['Pol']
 	else:
 		Pol = p_dict_defaults['Pol']
+	if 'SubDoppler' in list(p_dict.keys()):
+		SubDoppler = p_dict['SubDoppler']
+	else:
+		SubDoppler = p_dict_defaults['SubDoppler']
 
 	# get wavenumber
 	transition = ac.transitions[Elem+Dline]
 
 	wavenumber = transition.wavevectorMagnitude
-	
+
 	# --- Calculate susceptibilities ---
-	ChiPlus, ChiMinus, ChiZ = calc_chi(X, p_dict)
+	if SubDoppler:
+		pump_params = p_dict.get('pump_params', p_dict_defaults['pump_params'])
+		subdop_params = p_dict.get('subdop_params', p_dict_defaults['subdop_params'])
+
+		# Currently only implemented for Ag D2
+		if p_dict.get('Elem', p_dict_defaults['Elem']) == 'Ag' and p_dict.get('Dline', p_dict_defaults['Dline']) == 'D2':
+			ChiPlus, ChiMinus, ChiZ = calc_chi_subdoppler_agd2(X, p_dict, pump_params, subdop_params)
+		else:
+			raise ValueError("SubDoppler mode is currently only implemented for Elem='Ag' and Dline='D2'")
+	else:
+		ChiPlus, ChiMinus, ChiZ = calc_chi(X, p_dict)
+
 	n_trans = ChiPlus.shape[0] if ChiPlus.ndim > 1 else 1
 	n_det = len(X)
 

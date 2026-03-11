@@ -8,12 +8,24 @@ import re
 # ----------------------------------------------------
 # Matplotlib styling
 # ----------------------------------------------------
+fontsz = 16
+rcParams['font.family'] = 'serif' # e.g. 'sans-serif', 'monospace', etc.
+rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
+rcParams['font.size'] = fontsz
+rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
+
+from matplotlib.ticker import AutoMinorLocator
+
 rcParams['xtick.direction'] = 'in'
 rcParams['ytick.direction'] = 'in'
 rcParams['xtick.top'] = True
 rcParams['ytick.right'] = True
 rcParams['xtick.minor.visible'] = True
 rcParams['ytick.minor.visible'] = True
+rcParams['xtick.major.size'] = 4
+rcParams['ytick.major.size'] = 4
+rcParams['xtick.minor.size'] = 2
+rcParams['ytick.minor.size'] = 2
 
 # =====================================================
 # Custom colour palette (data colours)
@@ -26,11 +38,11 @@ CUSTOM_COLOURS = [
 	"#1f77b4",
 	"#ff7f0e",
 	"#2ca02c",
-	"#8727d6",
+	"#b258e6",
 	"#ec1414",
 	"#8c564b",
-	"#e377c2",
-	"#7f7f7f",
+	"#77dfe3",
+	"#e158e6",
 	"#bcbd22",
 	"#17becf",
 ]
@@ -43,7 +55,7 @@ pointsize = 3
 # If a curr is listed here, it overrides fitted delta_f.
 # =====================================================
 CUSTOM_DELTA_F_OVERRIDE_GHZ = {
-	9: 0.15000,   # <-- set your custom delta_f for curr9 here (GHz)
+	9: 0#0.15000,   # <-- set your custom delta_f for curr9 here (GHz)
 }
 
 # Optional: if you want "extra" shift added on top of fitted delta_f instead of overriding,
@@ -413,14 +425,14 @@ def plot_theory_minus_data(
 			x_use, diff,
 			yerr=np.abs(yerr_use),
 			fmt=".", capsize=0,
-			label=rf"curr{theory_curr} theory $-$ curr{data_curr} data"
+			label=rf"{theory_curr} mA theory $-${data_curr} mA data"
 		)
 	else:
-		ax.plot(x_use, diff, ".", label=rf"curr{theory_curr} theory $-$ curr{data_curr} data")
+		ax.plot(x_use, diff, ".", label=rf"{theory_curr} mA theory $-$ {data_curr} mA data")
 
 	ax.set_xlabel("Linear Detuning (GHz)")
 	ax.set_ylabel("Theory − Data")
-	ax.legend()
+	#ax.legend()
 	ax.minorticks_on()
 	fig.tight_layout()
 	plt.show()
@@ -724,7 +736,7 @@ def main():
 	else:
 		height_ratios = [3.0] + [1.0] * n_res
 		# column 0 = main/residual width; column 1 = extra histogram strip (extends beyond main)
-		width_ratios = [1.0, 0.22]
+		width_ratios = [1.0, 0.15]
 
 		fig = plt.figure(figsize=(9, 3.2 + 1.8 * n_res))
 		gs = fig.add_gridspec(
@@ -778,7 +790,7 @@ def main():
 					yerr=np.abs(yerr),
 					fmt=mk,
 					capsize=0,
-					label=f"curr{curr} data",
+					label=f"{curr} mA data",
 					color=cd,
 					markersize=pointsize,
 					linestyle="none"
@@ -788,7 +800,7 @@ def main():
 					x, y_off,
 					marker=mk,
 					linestyle="none",
-					label=f"curr{curr} data",
+					label=f"{curr} mA data",
 					color=cd,
 					markersize=pointsize
 				)
@@ -798,12 +810,20 @@ def main():
 			ax_main.plot(
 				x, yfit_off,
 				"-", linewidth=2,
-				label=f"curr{curr} theory",
-				color=ct
+				label=f"{curr} mA theory",
+				color=ct,
+				zorder = 3,
+				alpha = 0.8
 			)
 
 	ax_main.set_ylabel("Transmission" + (" (normalised)" if normalise else ""))
-	ax_main.legend()
+	ax_main.legend(
+		fontsize=12,
+		markerscale=0.8,
+		handlelength=1.5,
+		borderpad=0.3,
+		labelspacing=0.3
+	)
 	ax_main.minorticks_on()
 
 	# -----------------------------
@@ -819,11 +839,11 @@ def main():
 		x = curves[curr]["x"]          # <- shifted x (delta_f applied if enabled)
 		resid = curves[curr]["resid"]
 
-		axr.axhline(0, linewidth=1)
+		axr.axhline(0, color="grey", linewidth=1)
 
 		if resid is None:
-			axr.text(0.02, 0.7, f"curr{curr}: no 'Residuals_Norm' column", transform=axr.transAxes)
-			axr.set_ylabel(f"Res (curr{curr})")
+			#axr.text(0.02, 0.7, f"curr{curr}: no 'Residuals_Norm' column", transform=axr.transAxes)
+			axr.set_ylabel(f"Res ({curr}mA)")
 			axr.minorticks_on()
 			continue
 
@@ -840,24 +860,30 @@ def main():
 			linestyle="none"
 		)
 
-		axr.set_ylabel(f"Res (curr{curr})")
+		axr.set_ylabel(f"Res ({curr}mA)")
 		axr.minorticks_on()
 
 		if ah is not None:
 			r = resid[np.isfinite(resid)]
 			if r.size > 0:
 				rmin = min(np.floor(r.min()), -4)
-				rmax = max(np.ceil(r.max()),  4)
+				rmax = max(np.ceil(r.max()), 4)
 				edges = np.arange(rmin - 0.5, rmax + 0.5 + 1e-9, 1.0)
 
 				ah.hist(
-					r, bins=edges, density=True, orientation="horizontal",
-					alpha=0.6, edgecolor="black", linewidth=0.8
+					r,
+					bins=edges,
+					density=True,
+					orientation="horizontal",
+					alpha=0.6,
+					edgecolor="black",
+					linewidth=0.8
 				)
 
 				ys = np.linspace(edges[0], edges[-1], 400)
-				ah.plot(gauss_pdf(ys), ys, linewidth=2, color = "red")
-				ah.axhline(0, linewidth=1)
+				ah.plot(gauss_pdf(ys), ys, lw=2, color="red")
+
+				ah.axhline(0, color="grey", lw=1)
 				ah.set_xlabel("PDF")
 				ah.set_xlim(left=0)
 				ah.tick_params(direction="in", top=True, right=True)
