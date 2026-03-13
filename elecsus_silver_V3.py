@@ -55,14 +55,13 @@ DETUNING_SCAN_MHZ = np.linspace(-4000, 4000, 401)
 AG107_SHIFT = 229.24
 AG109_SHIFT = -246.76
 
-p_dict = {
+base_p_dict = {
 	'Elem': 'Ag',
 	'Dline': 'D2',
 	'T': 130.23,
 	'lcell': 25e-3,
 	'Bfield': 0.0,
 	'Btheta': 0.0,
-	'CustomPop': None,
 	'AgNumden': 1.0e16,
 	'Ag107frac': 51.839,
 	'Isotope_Combination': 0,
@@ -70,15 +69,12 @@ p_dict = {
 	'GammaBuf': 0.0,
 	'Constrain': True,
 	'SubDoppler': False,
-	#'CustomPop': [0.45, 0.55/3, 0.55/3, 0.55/3],
-	#'BoltzmannFactor': True,
-	#'I_pump': 0,
 	'pump_params': {
 		'pol': 'Left',
 		'probe_pol': 'Left',
 		'eta_pump': 1.0,
 		'eta_probe': 1.0,
-		'I_pump': 2030.0,
+		'I_pump': 200,#2030.0,
 		'I_probe': 13.2,
 		'I_sat': 867.0,
 	},
@@ -86,23 +82,39 @@ p_dict = {
 		'Nv': 201,
 		'vmax_sigma': 4.0,
 		'gamma_transit_Hz': 2.0e4,
-		'n_jobs': N_JOBS,   # << put it here
+		'n_jobs': N_JOBS,
 		'gamma_rep_Hz': 1.0e3,
-		'gamma_vcc_Hz': 1.0e3
+		'gamma_vcc_Hz': 1.0e4
 	}
+}
+
+# Old model: use CustomPop
+p_dict_old = {
+	**base_p_dict,
+	'CustomPop': [0.45, 0.55/3, 0.55/3, 0.55/3],
+	'BoltzmannFactor': False,
+	'SubDoppler': False,
+}
+
+# New V3 model: do NOT use CustomPop
+p_dict_new = {
+	**base_p_dict,
+	'CustomPop': None,
+	'BoltzmannFactor': True,
+	'SubDoppler': True,
 }
 
 if __name__ == "__main__":
 	# =========================================================
 	# RUN OLD MODEL
 	# =========================================================
-	chi_old_plus, chi_old_minus, chi_old_z = mf_old.calc_chi(DETUNING_SCAN_MHZ, p_dict)
+	chi_old_plus, chi_old_minus, chi_old_z = mf_old.calc_chi(DETUNING_SCAN_MHZ, p_dict_old)
 
 	S0_old = mf_old.chi_to_S0(
 		DETUNING_SCAN_MHZ,
 		E_in,
 		[chi_old_plus, chi_old_minus, chi_old_z],
-		p_dict
+		p_dict_old
 	)
 
 	# =========================================================
@@ -110,7 +122,7 @@ if __name__ == "__main__":
 	# =========================================================
 	chi_new_plus, chi_new_minus, chi_new_z, details = mf_new.calc_chi_subdoppler_agd2_dm(
 		DETUNING_SCAN_MHZ,
-		p_dict,
+		p_dict_new,
 		return_details=True
 	)
 
@@ -118,7 +130,7 @@ if __name__ == "__main__":
 		DETUNING_SCAN_MHZ,
 		E_in,
 		[chi_new_plus, chi_new_minus, chi_new_z],
-		p_dict
+		p_dict_new
 	)
 
 	# =========================================================
