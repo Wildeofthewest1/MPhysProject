@@ -926,20 +926,39 @@ def _build_cusp_vcc_kernel(v, width):
 	return W
 
 
-def _build_vcc_kernel(v, subdop_params):
+def _build_vcc_kernel(v, f0, subdop_params):
 	"""
 	Dispatch builder for the chosen VCC kernel.
 	"""
-	kernel_type = subdop_params.get('vcc_kernel', 'gaussian').lower()
+	kernel_type = subdop_params.get('vcc_kernel', 'thermal_reset').lower()
 	width = subdop_params.get('vcc_width', 20.0)
 
 	if kernel_type == 'gaussian':
 		return _build_gaussian_vcc_kernel(v, width)
 	elif kernel_type == 'cusp':
 		return _build_cusp_vcc_kernel(v, width)
+	elif kernel_type == 'thermal_reset':
+		return _build_thermal_reset_vcc_kernel(v, f0)
 	else:
-		raise ValueError(f"Unknown vcc_kernel '{kernel_type}'. Use 'gaussian' or 'cusp'.")
+		raise ValueError(
+			f"Unknown vcc_kernel '{kernel_type}'. "
+			"Use 'gaussian', 'cusp', or 'thermal_reset'."
+		)
 
+def _build_thermal_reset_vcc_kernel(v, f0):
+	"""
+	Strong-collision kernel:
+		W(v_out | v_in) = f0(v_out)
+
+	Each column is the same Maxwellian profile, so collisions
+	redistribute atoms directly back toward thermal equilibrium.
+
+	Columns are normalised in the continuum sense:
+		sum_i W[i,j] * dv = 1
+	provided f0 is already normalised so that sum_i f0[i] * dv = 1.
+	"""
+	W = np.tile(f0[:, None], (1, len(v)))
+	return W
 
 def chi_component_to_S0(X, E_in, chi_component, branch, p_dict):
 	"""
@@ -1166,14 +1185,14 @@ def calc_chi_subdoppler_agd2(X, p_dict, pump_params, subdop_params, return_compo
 		v107, dv107, f0107, _ = _build_velocity_grid(
 			DoppTemp_K, ac.Ag107.mass, Nv=Nv, vmax_sigma=vmax_sigma
 		)
-		W107 = _build_vcc_kernel(v107, subdop_params)
+		W107 = _build_vcc_kernel(v107, f0107, subdop_params)
 		grids['107'] = (v107, dv107, f0107, W107)
 
 	if Ag109frac != 0.0:
 		v109, dv109, f0109, _ = _build_velocity_grid(
 			DoppTemp_K, ac.Ag109.mass, Nv=Nv, vmax_sigma=vmax_sigma
 		)
-		W109 = _build_vcc_kernel(v109, subdop_params)
+		W109 = _build_vcc_kernel(v109, f0109, subdop_params)
 		grids['109'] = (v109, dv109, f0109, W109)
 
 	# -----------------------------
@@ -1203,6 +1222,9 @@ def calc_chi_subdoppler_agd2(X, p_dict, pump_params, subdop_params, return_compo
 
 			Nv_local = len(v)
 			Iden = np.eye(Nv_local)
+			# Build redistribution operator once W is defined on the velocity grid.
+			# We want K @ g ≈ ∫ W(v, v') g(v') dv'
+			K = W * dv
 
 			for j, det in enumerate(d):
 				doppler_MHz = (wavenumber * v) / (2.0 * np.pi * 1.0e6)
@@ -1216,27 +1238,17 @@ def calc_chi_subdoppler_agd2(X, p_dict, pump_params, subdop_params, return_compo
 				else:
 					Rp = np.zeros_like(delta_pump)
 
-				A = np.diag(Rp) + gamma_transit * Iden
+				# Solve steady-state ground-state population including VCC transport:
+				# [diag(Rp) + gamma_transit I + gamma_vcc (I - K)] g = gamma_transit f0
+				A = np.diag(Rp) + gamma_transit * Iden + gamma_vcc * (Iden - K)
 				b = gamma_transit * f0
 				g = np.linalg.solve(A, b)
 
+				# Simple excited-state proxy, same spirit as your current model
 				e = Rp * g / (gamma + gamma_transit)
-				if include_excited_vcc:
-					pass
 
-				delta_pop = (g - e) - f0
-
-				delta_pop_redist = delta_pop.copy()
-				for _ in range(n_vcc_steps):
-					delta_pop_redist = (W @ delta_pop_redist) * dv
-
-				# preserve total depletion area
-				area0 = np.sum(delta_pop) * dv
-				area1 = np.sum(delta_pop_redist) * dv
-				if abs(area1) > 0:
-					delta_pop_redist *= area0 / area1
-
-				delta_pop_eff = (1.0 - beta_vcc) * delta_pop + beta_vcc * delta_pop_redist
+				# Pump-induced change relative to thermal baseline
+				delta_pop_eff = g - f0#(g - e) - f0 #
 
 				resp = _lorentz_complex(delta_probe, gamma)
 				delta_contrib = iso_frac * trans_strength * np.sum(delta_pop_eff * resp) * dv

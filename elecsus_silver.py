@@ -2,22 +2,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from libs import main_functions as mf
-from matplotlib import rcParams
+
 
 import os
 os.chdir(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 #os.chdir(r"C:\Users\Matt\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
 print("Now running in:", os.getcwd())
 
-
+from matplotlib import rcParams
 fontsz = 16
 rcParams['font.family'] = 'serif' # e.g. 'sans-serif', 'monospace', etc.
 rcParams['font.serif'] = ['Times New Roman'] # specify a particular font
 rcParams['font.size'] = fontsz
 rcParams['mathtext.fontset'] = 'dejavuserif' # or 'cm', 'stix', 'custom'
-
 from matplotlib.ticker import AutoMinorLocator
-
 rcParams['xtick.direction'] = 'in'
 rcParams['ytick.direction'] = 'in'
 rcParams['xtick.top'] = True
@@ -47,17 +45,15 @@ pump_params = {
     'I_pump': 2030,   # W/m^2
     'I_probe': 13.2,  # W/m^2
     'I_sat': 867,    # W/m^2
-	'eta_pump': 0.05
+	'eta_pump': 0.019
 }
 subdop_params = {
-    'Nv': 301,
-    'vmax_sigma': 5.0,
+	'vcc_kernel': 'thermal_reset',
+    'Nv': 101,
+    'vmax_sigma': 4.0,
     'gamma_transit_Hz': 2.0e4,
-    'gamma_vcc_Hz': 1.0e8,
+    'gamma_vcc_Hz': 1.0e7,
     'vcc_width': 20.0,
-    'include_excited_vcc': False,
-    'n_vcc_steps': 3,
-    'beta_vcc': 1,
 }
 
 Temp = 130.23
