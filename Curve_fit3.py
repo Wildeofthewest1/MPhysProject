@@ -259,7 +259,7 @@ def _baseline_poly(x, coeffs):
 # =========================================================
 
 def build_model():
-	param_names = ['Temp', 'AgNumberDensity']
+	param_names = ['Temp', 'log10_AgNumberDensity']
 
 	if FIT_POPULATION:
 		param_names += ['a']
@@ -272,12 +272,12 @@ def build_model():
 			param_names += [f"b{i}"]
 
 	# initial guesses
-	p0 = [90.0, 1.5e16]
+	p0 = [90.0, np.log10(1.5e16)]
 	if FIT_POPULATION:
 		p0 += [0.4]
 	if FIT_ISOTOPE:
-		p0 += [DEFAULT_SHIFT107 if np.isfinite(DEFAULT_SHIFT107) else Ag107ShiftDefault,#229.24,
-			   DEFAULT_SHIFT109 if np.isfinite(DEFAULT_SHIFT109) else Ag109ShiftDefault]#-246.76]
+		p0 += [DEFAULT_SHIFT107 if np.isfinite(DEFAULT_SHIFT107) else Ag107ShiftDefault,
+			   DEFAULT_SHIFT109 if np.isfinite(DEFAULT_SHIFT109) else Ag109ShiftDefault]
 	if FIT_DELTA_F:
 		p0 += [delta_f_fixed]
 	if FIT_BASELINE:
@@ -286,8 +286,8 @@ def build_model():
 
 	# bounds
 	lo, hi = [], []
-	lo += [0.0, 1e15]
-	hi += [2000.0, 5e16]
+	lo += [0.0, 15.0]
+	hi += [2000.0, np.log10(5e16)]
 	if FIT_POPULATION:
 		lo += [0.0]; hi += [1.0]
 	if FIT_ISOTOPE:
@@ -295,7 +295,6 @@ def build_model():
 	if FIT_DELTA_F:
 		lo += [delta_f_fixed - 2.0]; hi += [delta_f_fixed + 2.0]
 	if FIT_BASELINE:
-		# b0 bounded separately; higher-order coefficients share symmetric bounds
 		lo += [0.2] + [-1.0] * BASELINE_ORDER
 		hi += [2.0] + [ 1.0] * BASELINE_ORDER
 
@@ -304,7 +303,8 @@ def build_model():
 	def model(exp_detuning_in, *params):
 		idx = 0
 		Temp = params[idx]; idx += 1
-		Nden = params[idx]; idx += 1
+		log10N = params[idx]; idx += 1
+		Nden = 10**log10N
 
 		a = None
 		if FIT_POPULATION:
@@ -330,18 +330,15 @@ def build_model():
 		tG, tT = _theory_curve_GHz_axis(Temp, Nden, a=a, shift107=shift107, shift109=shift109)
 		theory_interp = np.interp(exp_detuning_in + delta_f, tG, tT)
 
-		# --- baseline (always applied) ---
 		xin = exp_detuning_in - x0
 
 		if FIT_BASELINE:
 			B = _baseline_poly(xin, bcoeffs)
 		else:
-			# fixed baseline defaults
 			bdef = [BASELINE_DEFAULTS[f"b{i}"] for i in range(BASELINE_ORDER + 1)]
 			B = _baseline_poly(xin, bdef)
 
 		return B * theory_interp
-
 
 	return model, p0, bounds, param_names
 
@@ -519,8 +516,25 @@ popt, pcov = curve_fit(
 perr = np.sqrt(np.diag(pcov))
 
 # --- Build dictionaries for printing ---
-fit_dict = {k: v for k, v in zip(param_names, popt)}
-fit_err  = {k: e for k, e in zip(param_names, perr)}
+fit_dict = {}
+fit_err = {}
+
+for name, val, err in zip(param_names, popt, perr):
+	if name == "log10_AgNumberDensity":
+		Nval = 10**val
+		Nerr = np.log(10.0) * Nval * err
+		fit_dict["AgNumberDensity"] = Nval
+		fit_err["AgNumberDensity"] = Nerr
+	else:
+		fit_dict[name] = val
+		fit_err[name] = err
+
+log10N_idx = param_names.index("log10_AgNumberDensity")
+log10N_val = popt[log10N_idx]
+log10N_err = perr[log10N_idx]
+
+print("\nLog-density fit result:")
+print(f"log10_AgNumberDensity = {log10N_val:.6f} ± {log10N_err:.6f}")
 
 status = {}
 fixed  = {}
@@ -849,3 +863,9 @@ print(f"D = {ks.statistic:.3f},  p-value = {ks.pvalue:.3f}")
 #plt.savefig("Spec15MicW"+str(curr)+"A_"+str(Ag107ShiftDefault - Ag109ShiftDefault)+"MHz_POP_NP.png", dpi=300, bbox_inches='tight')
 
 plt.show()
+
+N = fit_dict["AgNumberDensity"]
+Nerr = fit_err["AgNumberDensity"]
+print("AgNumberDensity =", N)
+print("AgNumberDensity err =", Nerr)
+print("Relative error =", Nerr / N)

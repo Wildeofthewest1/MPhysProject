@@ -130,6 +130,30 @@ def fmt_sci(x, sig=4):
 	# keep mantissa in [1,10)
 	return f"{mant:.{sig}g}\\times 10^{{{exp}}}"
 
+# -----------------------------
+# Parameter display names / units for LaTeX table
+# -----------------------------
+PARAM_LABELS = {
+    "AgNumberDensity": r"Ag Number Density (\(\mathrm{atoms\,m^{-3}}\))",
+    "Temp":            r"Temperature (\(^{\circ}\mathrm{C}\))",
+    "a":               r"\(F=0\) Population",
+    "delta_f":         r"\(\delta_f\) (GHz)",
+    "shift107":        r"shift107 (MHz)",
+    "shift109":        r"shift109 (MHz)",
+    "b0":              r"\(b_0\)",
+    "b1":              r"\(b_1\) (GHz\(^{-1}\))",
+    "b2":              r"\(b_2\) (GHz\(^{-2}\))",
+    "b3":              r"\(b_3\) (GHz\(^{-3}\))",
+    "b4":              r"\(b_4\) (GHz\(^{-4}\))",
+}
+
+def param_label_latex(param_name: str) -> str:
+    """
+    Return a LaTeX-safe display label for a parameter, including units where known.
+    Falls back to escaped raw name if no mapping is defined.
+    """
+    return PARAM_LABELS.get(param_name, latex_escape(param_name))
+
 def round_err_and_match_value(val, err):
 	"""
 	Physics-style rounding:
@@ -267,7 +291,7 @@ def build_param_table(currs, param_files, param_list=None, fitted_only=False, si
 		params = keep
 
 	# header
-	cols = ["Parameter"] + [f"curr{c}" for c in currs]
+	cols = ["Parameter"] + [f"{c} mA" for c in currs]
 	colspec = "l" + "c" * len(currs)
 
 	lines = []
@@ -284,7 +308,7 @@ def build_param_table(currs, param_files, param_list=None, fitted_only=False, si
 
 	# body
 	for p in params:
-		row_cells = [latex_escape(p)]
+		row_cells = [param_label_latex(p)]
 		for c in currs:
 			dfp = by_curr.get(c)
 			if dfp is None:
