@@ -6,6 +6,11 @@ from matplotlib.ticker import AutoMinorLocator
 import pandas as pd
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+from joblib import Parallel, delayed
+from tqdm import tqdm
+import glob
+import os
+
 # ----------------------------------------------------
 # Matplotlib styling
 # ----------------------------------------------------
@@ -903,29 +908,29 @@ df.to_csv("frequencies7A.csv", index=False)
 from typing import Sequence, List
 
 def add_missing_minutes(times):
-    """
-    Given an array of times in seconds-within-the-minute (minutes omitted),
-    return absolute times by adding 60s per detected minute wrap.
+	"""
+	Given an array of times in seconds-within-the-minute (minutes omitted),
+	return absolute times by adding 60s per detected minute wrap.
 
-    A new minute is detected when times[i+1] < times[i].
+	A new minute is detected when times[i+1] < times[i].
 
-    Example:
-        [10, 20, 40, 50, 1, 4] -> [10, 20, 40, 50, 61, 64]
-    """
-    if not times:
-        return []
+	Example:
+		[10, 20, 40, 50, 1, 4] -> [10, 20, 40, 50, 61, 64]
+	"""
+	if not times:
+		return []
 
-    out: List[float] = []
-    minute = 0
+	out: List[float] = []
+	minute = 0
 
-    for i, t in enumerate(times):
-        # If this is not the first element, check if we wrapped since previous
-        if i > 0 and times[i] < times[i - 1]:
-            minute += 1
+	for i, t in enumerate(times):
+		# If this is not the first element, check if we wrapped since previous
+		if i > 0 and times[i] < times[i - 1]:
+			minute += 1
 
-        out.append(t + 60 * minute)
+		out.append(t + 60 * minute)
 
-    return np.array(out)
+	return np.array(out)
 
 times11 = (13.40, 39.41, 46.90, 53.89, 1.64, 9.00, 17.59, 27.47, 36.62, 46.67, 56.59, 8.03, 17.40, 30.73, 40.78, 55.60, 10.23, 26.15, 33.93, 42.55, 52.21, 0.42, 7.91, 17.59, 27.18, 36.84, 48.20, 4.92, 19.58, 33.90, 47.90, 57.53, 7.45, 16.97, 29.06, 37.90, 46.67, 7.35, 28.35, 41.68, 52.98, 9.44, 23.35, 41.78, 53.59, 7.09, 20.40, 33.50, 50.65, 6.06, 19.12, 37.36, 51.22, 7.32, 27.76, 41.46, 2.64, 20.24, 29.26, 41.36, 57.16, 29.23, 44.61, 11.59, 37.45, 2.76, 18.24, 36.36, 49.96, 1.91, 14.94, 36.08, 57.90, 25.45, 47.71, 10.03, 27.11, 46.72, 18.18, 54.36, 12.93, 52.89, 28.59)
 times22 = (22*60+30.31, 23*60+34.99, 24*60+47.23, 26*60+18.47, 27*60+20.18, 29*60+16.67, 31*60+01.93, 32*60+12.35, 34*60+16.70, 37*60+38.64, 0)
@@ -954,8 +959,6 @@ def load_tektronix_csv(filename):
 	t = data[:, 0]
 	ch1 = data[:, 1]
 	ch2 = data[:, 2]
-
-
 
 	# Check if frequency column exists
 	if ("FREQ" in header or"FREQ_HZ" in header) and data.shape[1] >= 4:
@@ -988,40 +991,40 @@ def standard_error(array):
 	return np.std(array, ddof=1)/np.sqrt(250)#effective_sample_size(array))
 
 def effective_sample_size_windowed(x, fs, max_lag_s=0.02):
-    
-    #Estimate N_eff using a windowed (tapered) autocorrelation sum.
-    #max_lag_s: only trust autocorrelation out to this lag (seconds).
-    
-    x = np.asarray(x, float)
-    x = x[np.isfinite(x)]
-    n = x.size
-    if n < 3:
-        return n
+	
+	#Estimate N_eff using a windowed (tapered) autocorrelation sum.
+	#max_lag_s: only trust autocorrelation out to this lag (seconds).
+	
+	x = np.asarray(x, float)
+	x = x[np.isfinite(x)]
+	n = x.size
+	if n < 3:
+		return n
 
-    x = x - x.mean()
+	x = x - x.mean()
 
-    # autocov via FFT
-    f = np.fft.rfft(x, n=2*n)
-    acf = np.fft.irfft(f * np.conj(f))[:n]
-    acf /= acf[0]  # now acf[0] = 1
+	# autocov via FFT
+	f = np.fft.rfft(x, n=2*n)
+	acf = np.fft.irfft(f * np.conj(f))[:n]
+	acf /= acf[0]  # now acf[0] = 1
 
-    max_lag = int(max_lag_s * fs)
-    max_lag = max(1, min(max_lag, n-2))
+	max_lag = int(max_lag_s * fs)
+	max_lag = max(1, min(max_lag, n-2))
 
-    # Bartlett taper weights
-    k = np.arange(1, max_lag + 1)
-    w = 1.0 - k / (max_lag + 1.0)
+	# Bartlett taper weights
+	k = np.arange(1, max_lag + 1)
+	w = 1.0 - k / (max_lag + 1.0)
 
-    tau_int = 1.0 + 2.0 * np.sum(w * acf[1:max_lag+1])
-    tau_int = max(tau_int, 1.0)
+	tau_int = 1.0 + 2.0 * np.sum(w * acf[1:max_lag+1])
+	tau_int = max(tau_int, 1.0)
 
-    return n / tau_int
+	return n / tau_int
 
 def standard_error_effective(x, fs = 100000, max_lag_s=0.02):
-    x = np.asarray(x, float)
-    x = x[np.isfinite(x)]
-    neff = effective_sample_size_windowed(x, fs, max_lag_s=max_lag_s)
-    return x.std(ddof=1) / np.sqrt(neff)
+	x = np.asarray(x, float)
+	x = x[np.isfinite(x)]
+	neff = effective_sample_size_windowed(x, fs, max_lag_s=max_lag_s)
+	return x.std(ddof=1) / np.sqrt(neff)
 
 def mean_ratio_with_bg_uncertainty(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err,
 	n_mc=5000, seed=0, guard_den=1e-12,
@@ -1089,91 +1092,91 @@ def mean_and_block_sem(x, fs=100_000, block_time=0.2):
 	return mean, err, M, L
 
 def mean_and_std_error(x):
-    
-    #Returns:
-    #    mean  : mean of the data
-    #    error : standard deviation of the data (used as error)
-    
-    x = np.asarray(x)
-    x = x[np.isfinite(x)]  # remove NaN/inf if present
+	
+	#Returns:
+	#    mean  : mean of the data
+	#    error : standard deviation of the data (used as error)
+	
+	x = np.asarray(x)
+	x = x[np.isfinite(x)]  # remove NaN/inf if present
 
-    mean = np.mean(x)
-    error = standard_error(x)  # sample standard deviation
+	mean = np.mean(x)
+	error = standard_error(x)  # sample standard deviation
 
-    return mean, error
+	return mean, error
 
 def mean_uncertainty_from_submeans(x, nseg=2):
-    N = len(x) // nseg
-    xm = x[:N*nseg].reshape(nseg, N).mean(axis=1)  # submeans
-    # scatter of submeans reflects low-f noise / drift on subrecord timescale
-    sd = xm.std(ddof=1)
-    # uncertainty on the full-record mean:
-    # if segments were independent, SEM = sd/sqrt(nseg)
-    # in practice this tends to be conservative for drift
-    return x.mean(), sd/np.sqrt(nseg)
+	N = len(x) // nseg
+	xm = x[:N*nseg].reshape(nseg, N).mean(axis=1)  # submeans
+	# scatter of submeans reflects low-f noise / drift on subrecord timescale
+	sd = xm.std(ddof=1)
+	# uncertainty on the full-record mean:
+	# if segments were independent, SEM = sd/sqrt(nseg)
+	# in practice this tends to be conservative for drift
+	return x.mean(), sd/np.sqrt(nseg)
 import numpy as np
 
 def hac_se_of_mean(x, max_lag=None):
-    x = np.asarray(x)
-    x = x[np.isfinite(x)]
-    N = x.size
-    if N < 3:
-        return x.mean(), np.nan
+	x = np.asarray(x)
+	x = x[np.isfinite(x)]
+	N = x.size
+	if N < 3:
+		return x.mean(), np.nan
 
-    x0 = x - x.mean()
+	x0 = x - x.mean()
 
-    # A common automatic choice for lag (Newey–West rule of thumb)
-    if max_lag is None:
-        max_lag = int(np.floor(4 * (N/100)**(2/9)))  # mild growth with N
-        max_lag = max(1, min(max_lag, N-2))
+	# A common automatic choice for lag (Newey–West rule of thumb)
+	if max_lag is None:
+		max_lag = int(np.floor(4 * (N/100)**(2/9)))  # mild growth with N
+		max_lag = max(1, min(max_lag, N-2))
 
-    # autocovariances gamma_k
-    gamma0 = np.dot(x0, x0) / N
-    var = gamma0
+	# autocovariances gamma_k
+	gamma0 = np.dot(x0, x0) / N
+	var = gamma0
 
-    for k in range(1, max_lag + 1):
-        gamma_k = np.dot(x0[:-k], x0[k:]) / N
-        w = 1.0 - k/(max_lag + 1.0)  # Bartlett taper
-        var += 2.0 * w * gamma_k
+	for k in range(1, max_lag + 1):
+		gamma_k = np.dot(x0[:-k], x0[k:]) / N
+		w = 1.0 - k/(max_lag + 1.0)  # Bartlett taper
+		var += 2.0 * w * gamma_k
 
-    # variance of the sample mean
-    var_mean = var / N
-    se_mean = np.sqrt(max(var_mean, 0.0))
-    return x.mean(), se_mean
+	# variance of the sample mean
+	var_mean = var / N
+	se_mean = np.sqrt(max(var_mean, 0.0))
+	return x.mean(), se_mean
 
 def transmission_mc_fast(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err,
-                         block_size=500, n_mc=1000, seed=0, guard_frac=0.01):
-    rng = np.random.default_rng(seed)
+						 block_size=500, n_mc=1000, seed=0, guard_frac=0.01):
+	rng = np.random.default_rng(seed)
 
-    x = block_mean(np.abs(ch1_arr), block_size)
-    y = block_mean(np.abs(ch2_arr), block_size)
+	x = block_mean(np.abs(ch1_arr), block_size)
+	y = block_mean(np.abs(ch2_arr), block_size)
 
-    denom0 = y - bg2
-    scale = np.median(np.abs(denom0))
-    guard = max(1e-12, guard_frac * scale)
-    mask0 = np.abs(denom0) > guard
+	denom0 = y - bg2
+	scale = np.median(np.abs(denom0))
+	guard = max(1e-12, guard_frac * scale)
+	mask0 = np.abs(denom0) > guard
 
-    r0 = (x[mask0] - bg1) / (y[mask0] - bg2)
-    T = np.mean(r0)
-    se_stat = np.std(r0, ddof=1) / np.sqrt(len(r0))  # blocks ~independent
+	r0 = (x[mask0] - bg1) / (y[mask0] - bg2)
+	T = np.mean(r0)
+	se_stat = np.std(r0, ddof=1) / np.sqrt(len(r0))  # blocks ~independent
 
-    # MC over backgrounds (cheap now: len(x) ~ few hundred)
-    bg1_s = rng.normal(bg1, bg1_err, size=n_mc)
-    bg2_s = rng.normal(bg2, bg2_err, size=n_mc)
+	# MC over backgrounds (cheap now: len(x) ~ few hundred)
+	bg1_s = rng.normal(bg1, bg1_err, size=n_mc)
+	bg2_s = rng.normal(bg2, bg2_err, size=n_mc)
 
-    # vectorised: shape (n_mc, n_blocks)
-    denom = (y[mask0][None, :] - bg2_s[:, None])
-    numer = (x[mask0][None, :] - bg1_s[:, None])
+	# vectorised: shape (n_mc, n_blocks)
+	denom = (y[mask0][None, :] - bg2_s[:, None])
+	numer = (x[mask0][None, :] - bg1_s[:, None])
 
-    # avoid rare near-zero denom in draws
-    good = np.abs(denom) > guard
-    ratio = np.where(good, numer / denom, np.nan)
-    T_samp = np.nanmean(ratio, axis=1)
+	# avoid rare near-zero denom in draws
+	good = np.abs(denom) > guard
+	ratio = np.where(good, numer / denom, np.nan)
+	T_samp = np.nanmean(ratio, axis=1)
 
-    se_bg = np.nanstd(T_samp, ddof=1)
-    se_tot = np.sqrt(se_stat**2 + se_bg**2)
+	se_bg = np.nanstd(T_samp, ddof=1)
+	se_tot = np.sqrt(se_stat**2 + se_bg**2)
 
-    return T, se_tot, se_stat, se_bg, len(r0)
+	return T, se_tot, se_stat, se_bg, len(r0)
 
 def errorSimple(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err):
 	#ch1_mean = np.mean(ch1_arr)
@@ -1200,18 +1203,19 @@ def errorSimple(ch1_arr, ch2_arr, bg1, bg1_err, bg2, bg2_err):
 """
 
 def divided_error_and_mean(ch1, ch2, bg1__, bg2__):
-
-	tr = (ch1-bg1__)/(ch2-bg2__)
-
+	tr = (ch1 - bg1__) / (ch2 - bg2__)
 	tr_ave = np.mean(tr)
+	tr_error = np.std(tr, ddof=1) / np.sqrt(len(tr))
+	return np.abs(tr_ave), np.abs(tr_error)
 
-	tr_error = np.std(tr)/7.95
-
-	return np.array(np.abs(tr_ave)), np.array(np.abs(tr_error))
+def process_tektronix_file(i, file_csv, bg1, bg2):
+	t, ch1_arr, ch2_arr, FrequencyValue = load_tektronix_csv(file_csv)
+	T, T_err = divided_error_and_mean(ch1_arr, ch2_arr, bg1, bg2)
+	return i, T, T_err, FrequencyValue
 
 import glob
 #14-22
-for k in range(-2,-1):
+for k in range(-12,-10):
 	print(k)
 	first = k
 
@@ -1283,6 +1287,10 @@ for k in range(-2,-1):
 		folder = "SubDoppler_3/No_Pump/"
 	elif first == -10:
 		folder = "SubDoppler_3/With_Pump/"
+	elif first == -11:
+		folder = "SubDoppler_8mA_4_Lamp_Flipped/No_Pump/"
+	elif first == -12:
+		folder = "SubDoppler_8mA_4_Lamp_Flipped/With_Pump/"
 
 	base_path = "Photodiode_Data/" + folder
 
@@ -1313,61 +1321,35 @@ for k in range(-2,-1):
 
 	bg1 = np.mean(ch1_arr_)
 	bg2 = np.mean(ch2_arr_)
+	###
+	# Build jobs for all non-background files
+	jobs = [
+		(i, file_csv, bg1, bg2)
+		for i, file_csv in enumerate(files[:-1])
+	]
 
+	# Run in parallel
+	results = Parallel(
+		n_jobs=-1,          # use all CPU cores
+		backend="loky",     # process-based parallelism
+		batch_size="auto"
+	)(
+		delayed(process_tektronix_file)(i, file_csv, bg1_, bg2_)
+		for i, file_csv, bg1_, bg2_ in tqdm(jobs, desc="Processing CSVs")
+	)
 
-	for i in range(0, len(files)-1):
-		print("file "+str(i+1)+"/"+str(len(files)-1))
-		# Single Tektronix CSV containing TIME, CH1, CH2
-		file_csv = base_path + "tek" + str(i).zfill(4) + "ALL.csv"
+	# Restore file order just in case
+	results.sort(key=lambda x: x[0])
 
-		# Load data
-		t, ch1_arr, ch2_arr, FrequencyValue = load_tektronix_csv(file_csv)
-		print(FrequencyValue)
-		"""
-		T, T_err, T_err_stat, T_err_bg, nblocks = transmission_mc_fast(\
-			ch1_arr, ch2_arr,\
-			bg1, bg1_error,\
-			bg2, bg2_error,\
-			block_size=500,\
-			n_mc=1000,\
-			seed=123+i\
-		)
-		"""
-		T, T_err = divided_error_and_mean(ch1_arr, ch2_arr, bg1 ,bg2)
-		#errorSimple(ch1_arr, ch2_arr,bg1, bg1_error,bg2, bg2_error)
+	averages1 = []
+	FrequencyValues = []
 
-		#if i != len(files)-1:
+	for i, T, T_err, FrequencyValue in results:
 		averages1.append((T, T_err))
 		if FrequencyValue is not None:
 			FrequencyValues.append(FrequencyValue)
-		#else: print("done")
-
-		#ch3_arr = (np.abs(ch1_arr)-bg1)/(np.abs(ch2_arr)-bg2)
-
-		#avg = np.mean(ch3_arr)
-		#avg_error = np.std(ch3_arr)/np.sqrt(len(ch3_arr))
-
-		# Compute averages
-		#avg1 = np.mean(ch1_arr)
-		#avg2 = np.mean(ch2_arr)
 		
-		#avg1err = np.std(ch1_arr)/np.sqrt(len(ch1_arr))
-		#avg2err = np.std(ch2_arr)/np.sqrt(len(ch2_arr))
-
-		#
-
-		#if i != len(files)-1:
-		#	averages1.append((avg, avg_error))
-			#averages1.append((avg1, avg1err))
-			#averages2.append((avg2, avg2err))
-		#else:
-			#plt.plot(t,ch3_arr)
-			#plt.show()
-			#background1 = ( avg, avg_error)
-			#background1 = (avg1, avg1err)
-			#background2 = (avg2, avg2err)
-		#	print("doneeee")
-
+	###
 	averages1_means = np.array([m for (m, e) in averages1])
 	averages1_errs  = np.array([e for (m, e) in averages1])
 
@@ -1458,6 +1440,12 @@ for k in range(-2,-1):
 		elif first == -10:
 			xs = freq2det(FrequencyValues)
 			df.to_csv("frequencies8A_SD3_WP.csv", index=False)
+		elif first == -11:
+			xs = freq2det(FrequencyValues)
+			df.to_csv("frequencies8A_SD4_NP.csv", index=False)
+		elif first == -12:
+			xs = freq2det(FrequencyValues)
+			df.to_csv("frequencies8A_SD4_WP.csv", index=False)
 		
 	if first == 23:
 		xs = times2

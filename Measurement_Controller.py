@@ -12,24 +12,27 @@ import math
 # User settings
 # -----------------------------
 REPO_DIR = Path(r"C:\Users\Alienware\OneDrive - Durham University\Level_4_Project\Lvl_4\Repo")
-TYPEFOLDERNAME = "SubDoppler_3"
+TYPEFOLDERNAME = "SubDoppler_8mA_4_Lamp_Flipped"
 
 SCOPE_ADDR = "USB0::0x0699::0x0421::C020493::INSTR"
 AFG_ADDR   = "USB0::0x0699::0x0343::C023586::INSTR"
 
 measurement_delay = 4  # seconds
 
+# --- Channel recording switches ---
+RECORD_CH3 = False   # Set to False to save only CH1 and CH2
+
 # --- Desired scope scales ---
 TIME_PER_DIV_S = 0.1      # 100 ms/div
 CH1_SCALE_VDIV = 0.02     # 20 mV/div
 CH2_SCALE_VDIV = 0.02     # 20 mV/div
+CH3_SCALE_VDIV = 0.02     # 20 mV/div
 
 # --- Bristol wavemeter (use 32-bit helper only) ---
 WAVEMETER_PRESENT = True
 BRISTOL_HELPER = REPO_DIR / "bristol_read.py"
-BRISTOL_HELPER_PY = ["py", "-3.14-32"]   # uses your Python launcher entry
+BRISTOL_HELPER_PY = ["py", "-3.14-32"]
 BRISTOL_TIMEOUT_S = 2.0
-
 
 def read_bristol_lambda_nm_via_32bit(timeout_s: float = BRISTOL_TIMEOUT_S) -> float:
 	"""
@@ -67,9 +70,9 @@ def tek_name(index: int) -> str:
 
 
 def build_offsets() -> np.ndarray:
-	seg1 = np.round(np.arange(0.00, 1.80 + 1e-12, 0.10), 2)   # 0.00 .. 1.80
-	seg2 = np.round(np.arange(1.81, 3.80 + 1e-12, 0.01), 2)   # 1.81 .. 3.80
-	seg3 = np.round(np.arange(3.90, 5.00 + 1e-12, 0.10), 2)   # 3.90 .. 5.00
+	seg1 = np.round(np.arange(0.00, 1.80 + 1e-12, 0.10), 2)
+	seg2 = np.round(np.arange(1.81, 3.80 + 1e-12, 0.01), 2)
+	seg3 = np.round(np.arange(3.90, 5.00 + 1e-12, 0.10), 2)
 
 	offsets = np.concatenate([seg1, seg2, seg3])
 	return offsets
@@ -77,27 +80,27 @@ def build_offsets() -> np.ndarray:
 
 def configure_scope(scope):
 	"""
-	Set scope horizontal + vertical scales:
-	  - 100 ms/div (10 divisions => 1s total)
-	  - 20 mV/div on CH1 and CH2
+	Set scope horizontal + vertical scales.
 	"""
-	# Horizontal: 0.1 s/div
 	scope.write(f"HOR:MAIN:SCA {TIME_PER_DIV_S}")
 
-	# Vertical scales: 0.02 V/div
 	scope.write(f"CH1:SCA {CH1_SCALE_VDIV}")
 	scope.write(f"CH2:SCA {CH2_SCALE_VDIV}")
 
-	# (Optional) Make sure both channels are on
 	scope.write("SEL:CH1 ON")
 	scope.write("SEL:CH2 ON")
+
+	if RECORD_CH3:
+		scope.write(f"CH3:SCA {CH3_SCALE_VDIV}")
+		scope.write("SEL:CH3 ON")
+	else:
+		scope.write("SEL:CH3 OFF")
 
 
 # -----------------------------
 # Main
 # -----------------------------
 def main():
-	# Folder setup
 	data_dir = REPO_DIR / "Photodiode_Data" / TYPEFOLDERNAME
 	data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -105,7 +108,6 @@ def main():
 	run_folder.mkdir(parents=True, exist_ok=False)
 	print("Saving data to:", run_folder)
 
-	# VISA setup
 	rm = pyvisa.ResourceManager("@ivi")
 	scope = rm.open_resource(SCOPE_ADDR)
 	afg   = rm.open_resource(AFG_ADDR)
@@ -122,13 +124,11 @@ def main():
 	except Exception:
 		pass
 
-	# Apply the scope scales you asked for
 	configure_scope(scope)
 
 	def get_waveform(channel: int):
 		"""
-		Export the full CURRENT waveform record using the scope's existing settings.
-		Only adjusts the transfer window (DATA:START/STOP), not acquisition.
+		Export the full current waveform record using the scope's existing settings.
 		"""
 		scope.write(f"DATA:SOU CH{channel}")
 		scope.write("DATA:WIDTH 1")
@@ -156,12 +156,10 @@ def main():
 		return t, volts
 
 	try:
-		# Quick check of wavemeter (optional but useful)
 		if WAVEMETER_PRESENT:
 			test_freq = read_bristol_freq_hz_string()
 			print(f"Wavemeter test (Hz): {test_freq}")
 
-		# Build your custom sweep list
 		offsets = build_offsets()
 		num_measurements = len(offsets)
 		print(f"Total measurements: {num_measurements}")
@@ -180,18 +178,31 @@ def main():
 			t1, ch1 = get_waveform(1)
 			t2, ch2 = get_waveform(2)
 
-			n = min(len(t1), len(t2), len(ch1), len(ch2))
-			t = t1[:n]
-			ch1 = ch1[:n]
-			ch2 = ch2[:n]
+			if RECORD_CH3:
+				t3, ch3 = get_waveform(3)
+				n = min(len(t1), len(t2), len(t3), len(ch1), len(ch2), len(ch3))
+				t = t1[:n]
+				ch1 = ch1[:n]
+				ch2 = ch2[:n]
+				ch3 = ch3[:n]
+			else:
+				n = min(len(t1), len(t2), len(ch1), len(ch2))
+				t = t1[:n]
+				ch1 = ch1[:n]
+				ch2 = ch2[:n]
 
 			freq_str = read_bristol_freq_hz_string()
 			print(f"Wavemeter frequency (Hz): {freq_str}")
 
 			with open(filename, "w", newline="") as f:
 				w = csv.writer(f)
-				w.writerow(["TIME", "CH1", "CH2", "FREQ"])
-				w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
+
+				if RECORD_CH3:
+					w.writerow(["TIME", "CH1", "CH2", "CH3", "FREQ"])
+					w.writerows((ti, v1, v2, v3, freq_str) for ti, v1, v2, v3 in zip(t, ch1, ch2, ch3))
+				else:
+					w.writerow(["TIME", "CH1", "CH2", "FREQ"])
+					w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
 
 			print(f"Saved: {filename.name}")
 
@@ -202,7 +213,6 @@ def main():
 
 		print("\nSweep complete.")
 
-		# Background capture
 		input("Press ENTER to take background measurement...")
 
 		bg_index = num_measurements
@@ -214,24 +224,36 @@ def main():
 		t1, ch1 = get_waveform(1)
 		t2, ch2 = get_waveform(2)
 
-		n = min(len(t1), len(t2), len(ch1), len(ch2))
-		t = t1[:n]
-		ch1 = ch1[:n]
-		ch2 = ch2[:n]
+		if RECORD_CH3:
+			t3, ch3 = get_waveform(3)
+			n = min(len(t1), len(t2), len(t3), len(ch1), len(ch2), len(ch3))
+			t = t1[:n]
+			ch1 = ch1[:n]
+			ch2 = ch2[:n]
+			ch3 = ch3[:n]
+		else:
+			n = min(len(t1), len(t2), len(ch1), len(ch2))
+			t = t1[:n]
+			ch1 = ch1[:n]
+			ch2 = ch2[:n]
 
 		freq_str = read_bristol_freq_hz_string()
 		print(f"Wavemeter frequency (Hz): {freq_str}")
 
 		with open(bg_file, "w", newline="") as f:
 			w = csv.writer(f)
-			w.writerow(["TIME", "CH1", "CH2", "FREQ"])
-			w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
+
+			if RECORD_CH3:
+				w.writerow(["TIME", "CH1", "CH2", "CH3", "FREQ"])
+				w.writerows((ti, v1, v2, v3, freq_str) for ti, v1, v2, v3 in zip(t, ch1, ch2, ch3))
+			else:
+				w.writerow(["TIME", "CH1", "CH2", "FREQ"])
+				w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
 
 		print(f"Background saved: {bg_file.name}")
 		print("\nMeasurement run complete.")
 
 	finally:
-		# Clean shutdown
 		try:
 			scope.close()
 		except Exception:
