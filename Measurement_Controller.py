@@ -1,4 +1,3 @@
-import os
 import time
 import csv
 from pathlib import Path
@@ -22,6 +21,15 @@ measurement_delay = 4  # seconds
 # --- Channel recording switches ---
 RECORD_CH3 = False   # Set to False to save only CH1 and CH2
 
+# --- Camera switches ---
+THORCAM_PRESENT = True
+SAVE_CAMERA_IMAGE_EACH_MEASUREMENT = True
+SAVE_CAMERA_IMAGE_FOR_BACKGROUND = True
+
+THORCAM_HELPER = REPO_DIR / "thorcam_capture.py"
+THORCAM_HELPER_PY = [r"C:\Users\Alienware\AppData\Local\Python\pythoncore-3.14-64\python.exe"]
+THORCAM_EXPOSURE_US = 100008
+
 # --- Desired scope scales ---
 TIME_PER_DIV_S = 0.1      # 100 ms/div
 CH1_SCALE_VDIV = 0.02     # 20 mV/div
@@ -33,6 +41,7 @@ WAVEMETER_PRESENT = True
 BRISTOL_HELPER = REPO_DIR / "bristol_read.py"
 BRISTOL_HELPER_PY = ["py", "-3.14-32"]
 BRISTOL_TIMEOUT_S = 2.0
+
 
 def read_bristol_lambda_nm_via_32bit(timeout_s: float = BRISTOL_TIMEOUT_S) -> float:
 	"""
@@ -69,6 +78,9 @@ def tek_name(index: int) -> str:
 	return f"tek{index:04d}ALL.csv"
 
 
+def image_name(index: int) -> str:
+	return f"img{index:04d}.tif"
+
 def build_offsets() -> np.ndarray:
 	seg1 = np.round(np.arange(0.00, 1.80 + 1e-12, 0.10), 2)
 	seg2 = np.round(np.arange(1.81, 3.80 + 1e-12, 0.01), 2)
@@ -77,6 +89,15 @@ def build_offsets() -> np.ndarray:
 	offsets = np.concatenate([seg1, seg2, seg3])
 	return offsets
 
+"""
+def build_offsets() -> np.ndarray:
+	seg1 = np.round(np.arange(2.4, 2.5 + 1e-12, 0.10), 2)
+	seg2 = np.round(np.arange(2.5, 2.6 + 1e-12, 0.01), 2)
+	seg3 = np.round(np.arange(2.6, 2.7 + 1e-12, 0.10), 2)
+
+	offsets = np.concatenate([seg1, seg2, seg3])
+	return offsets
+"""
 
 def configure_scope(scope):
 	"""
@@ -97,6 +118,16 @@ def configure_scope(scope):
 		scope.write("SEL:CH3 OFF")
 
 
+def capture_thorcam_image(save_path: Path):
+	"""
+	Capture one ThorCam image using the external helper script.
+	"""
+	subprocess.run(
+		THORCAM_HELPER_PY + [str(THORCAM_HELPER), str(save_path), str(THORCAM_EXPOSURE_US)],
+		check=True
+	)
+
+
 # -----------------------------
 # Main
 # -----------------------------
@@ -106,7 +137,15 @@ def main():
 
 	run_folder = data_dir / datetime.now().strftime("%Y%m%d_%H%M%S")
 	run_folder.mkdir(parents=True, exist_ok=False)
-	print("Saving data to:", run_folder)
+
+	csv_folder = run_folder / "CSV"
+	image_folder = run_folder / "Images"
+	csv_folder.mkdir(parents=True, exist_ok=False)
+	image_folder.mkdir(parents=True, exist_ok=False)
+
+	print("Saving run to:", run_folder)
+	print("CSV folder:", csv_folder)
+	print("Image folder:", image_folder)
 
 	rm = pyvisa.ResourceManager("@ivi")
 	scope = rm.open_resource(SCOPE_ADDR)
@@ -169,7 +208,7 @@ def main():
 		for idx, offset in enumerate(offsets):
 			loop_start = time.time()
 
-			filename = run_folder / tek_name(idx)
+			filename = csv_folder / tek_name(idx)
 			print(f"\nMeasurement {idx+1}/{num_measurements} | offset = {offset:.3f} V -> {filename.name}")
 
 			afg.write(f"SOUR1:VOLT:OFFS {offset}")
@@ -204,7 +243,15 @@ def main():
 					w.writerow(["TIME", "CH1", "CH2", "FREQ"])
 					w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
 
-			print(f"Saved: {filename.name}")
+			print(f"Saved CSV: {filename.name}")
+
+			if THORCAM_PRESENT and SAVE_CAMERA_IMAGE_EACH_MEASUREMENT:
+				try:
+					img_file = image_folder / image_name(idx)
+					capture_thorcam_image(img_file)
+					print(f"Saved image: {img_file.name}")
+				except Exception as e:
+					print(f"ThorCam capture failed for measurement {idx}: {e}")
 
 			loop_time = time.time() - loop_start
 			elapsed = time.time() - start_time
@@ -216,7 +263,7 @@ def main():
 		input("Press ENTER to take background measurement...")
 
 		bg_index = num_measurements
-		bg_file = run_folder / tek_name(bg_index)
+		bg_file = csv_folder / tek_name(bg_index)
 		print(f"Taking background -> {bg_file.name}")
 
 		time.sleep(measurement_delay)
@@ -251,6 +298,15 @@ def main():
 				w.writerows((ti, v1, v2, freq_str) for ti, v1, v2 in zip(t, ch1, ch2))
 
 		print(f"Background saved: {bg_file.name}")
+
+		if THORCAM_PRESENT and SAVE_CAMERA_IMAGE_FOR_BACKGROUND:
+			try:
+				bg_img_file = image_folder / image_name(bg_index)
+				capture_thorcam_image(bg_img_file)
+				print(f"Background image saved: {bg_img_file.name}")
+			except Exception as e:
+				print(f"ThorCam background capture failed: {e}")
+
 		print("\nMeasurement run complete.")
 
 	finally:

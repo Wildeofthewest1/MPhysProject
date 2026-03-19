@@ -11,6 +11,9 @@ from tqdm import tqdm
 import glob
 import os
 
+import tifffile
+from pathlib import Path
+
 # ----------------------------------------------------
 # Matplotlib styling
 # ----------------------------------------------------
@@ -1213,9 +1216,34 @@ def process_tektronix_file(i, file_csv, bg1, bg2):
 	T, T_err = divided_error_and_mean(ch1_arr, ch2_arr, bg1, bg2)
 	return i, T, T_err, FrequencyValue
 
+CROP_Y0 = 500
+CROP_Y1 = 540
+CROP_X0 = 700
+CROP_X1 = 740
+
+def sum_tiff_pixels(file_tif):
+	img = tifffile.imread(file_tif)
+	cropped = img[CROP_Y0:CROP_Y1, CROP_X0:CROP_X1]
+	return float(np.sum(cropped, dtype=np.float64))
+
+def process_tiff_file(i, file_tif, bg_sum):
+	total = sum_tiff_pixels(file_tif)
+	return i, total - bg_sum
+
+
+def get_images_base_path(base_path: str) -> str:
+	"""
+	If base_path ends in .../CSV/, return sibling .../Images/.
+	Otherwise return .../Images/ inside the same folder.
+	"""
+	p = Path(base_path)
+	if p.name == "CSV":
+		return str(p.parent / "Images")
+	return str(p / "Images")
+
 import glob
 #14-22
-for k in range(-12,-10):
+for k in range(-11,-10):
 	print(k)
 	first = k
 
@@ -1288,7 +1316,7 @@ for k in range(-12,-10):
 	elif first == -10:
 		folder = "SubDoppler_3/With_Pump/"
 	elif first == -11:
-		folder = "SubDoppler_8mA_4_Lamp_Flipped/No_Pump/"
+		folder = "Flourescence_Spec_1/20260319_120705/CSV/"
 	elif first == -12:
 		folder = "SubDoppler_8mA_4_Lamp_Flipped/With_Pump/"
 
@@ -1352,6 +1380,58 @@ for k in range(-12,-10):
 	###
 	averages1_means = np.array([m for (m, e) in averages1])
 	averages1_errs  = np.array([e for (m, e) in averages1])
+
+	###
+	# ----------------------------------------------------
+	# Optional fluorescence from TIFF images
+	# ----------------------------------------------------
+	fluorescence = None
+	fluorescence_err = None
+
+	images_base_path = get_images_base_path(base_path)
+	tiff_files = sorted(glob.glob(os.path.join(images_base_path, "img*.tif")))
+
+	print("Found TIFF files:", len(tiff_files))
+
+	if len(tiff_files) >= 2:
+		# Use final image as background, same convention as CSVs
+		bg_tif_index = len(tiff_files) - 1
+		bg_tif_file = tiff_files[bg_tif_index]
+		bg_sum = sum_tiff_pixels(bg_tif_file)
+
+		# Process all non-background TIFFs in parallel
+		tiff_jobs = [
+			(i, file_tif, bg_sum)
+			for i, file_tif in enumerate(tiff_files[:-1])
+		]
+
+		tiff_results = Parallel(
+			n_jobs=-1,
+			backend="loky",
+			batch_size="auto"
+		)(
+			delayed(process_tiff_file)(i, file_tif, bg_sum)
+			for i, file_tif, bg_sum in tqdm(tiff_jobs, desc="Processing TIFFs")
+		)
+
+		tiff_results.sort(key=lambda x: x[0])
+
+		fluorescence = np.array([val for _, val in tiff_results], dtype=float)
+
+		# Simple Poisson-style uncertainty estimate on summed counts after subtraction
+		# using sigma(sum) ~ sqrt(sum_signal + sum_bg)
+		raw_signal_sums = np.array([sum_tiff_pixels(f) for f in tiff_files[:-1]], dtype=float)
+		fluorescence_err = np.sqrt(np.clip(raw_signal_sums + bg_sum, 0, None))
+
+		# If lengths do not match the transmission points, truncate consistently
+		n_common = min(len(fluorescence), len(averages1_means))
+		fluorescence = fluorescence[:n_common]
+		fluorescence_err = fluorescence_err[:n_common]
+		print("Fluorescence points used:", n_common)
+	else:
+		print("No usable TIFF fluorescence data found.")
+	###
+
 
 	#averages2_means = np.array([m for (m, e) in averages2])
 	#averages2_errs  = np.array([e for (m, e) in averages2])
@@ -1541,6 +1621,19 @@ for k in range(-12,-10):
 	#plt.show()
 
 	######## save to csv
+
+	if fluorescence is not None:
+		n_common = min(len(xs), len(transmission), len(fluorescence))
+		xs_plot = np.asarray(xs)[:n_common]
+		transmission_plot = transmission[:n_common]
+		transmission_err_plot = transmission_err[:n_common]
+		fluorescence_plot = fluorescence[:n_common]
+		fluorescence_err_plot = fluorescence_err[:n_common]
+	else:
+		xs_plot = np.asarray(xs)
+		transmission_plot = transmission
+		transmission_err_plot = transmission_err
+
 	df = pd.DataFrame({
 		"Transmission": transmission,
 		"Transmissionerr": transmission_err,
@@ -1602,12 +1695,13 @@ for k in range(-12,-10):
 	print(len(transmission))#,len(xs))
 
 	if first == 1 or first == 4 or first <= -1 and first != -2:
-		#print(np.max(transmission))
-		#print(np.min(transmission))
-		plt.errorbar(xs, transmission, yerr=np.abs(transmission_err),fmt='.')#/np.max(transmission))
-		
-		#plt.ylim(0,1.1)
-		#plt.yticks([ 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+		plt.figure()
+		plt.errorbar(
+			xs_plot if fluorescence is not None else xs,
+			transmission_plot if fluorescence is not None else transmission,
+			yerr=np.abs(transmission_err_plot if fluorescence is not None else transmission_err),
+			fmt='.'
+		)
 		plt.xlabel("Detuning (GHz)")
 		plt.ylabel("Transmission")
 	
@@ -1704,7 +1798,34 @@ for k in range(-12,-10):
 		plt.xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18])
 		plt.xlabel("Time (Minutes)")
 		plt.ylabel("On resonance Transmission")
+	if fluorescence is not None:
+		plt.figure()
+		plt.errorbar(
+			xs_plot,
+			fluorescence_plot,
+			yerr=np.abs(fluorescence_err_plot),
+			fmt='.'
+		)
+		plt.xlabel("Detuning (GHz)")
+		plt.ylabel("Fluorescence (background-subtracted summed counts)")
+		plt.tight_layout()
 
+		if first == -11:
+			plt.savefig("FluorescenceSpec1", dpi=300, bbox_inches='tight')
+		else:
+			plt.savefig("FluorescenceData", dpi=300, bbox_inches='tight')
+
+	if fluorescence is not None:
+		df_fluor = pd.DataFrame({
+			"Detuning": xs_plot,
+			"Fluorescence": fluorescence_plot,
+			"Fluorescenceerr": fluorescence_err_plot
+		})
+
+		if first == -11:
+			df_fluor.to_csv("FluorescenceSpec1.csv", index=False)
+		else:
+			df_fluor.to_csv("FluorescenceData.csv", index=False)
 
 	if first < 5:
 		plt.tight_layout()
